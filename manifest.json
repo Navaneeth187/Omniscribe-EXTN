@@ -1,0 +1,77 @@
+{
+  "manifest_version": 3,
+  "name": "Omniscribe AI",
+  "version": "1.0.0",
+  "description": "Unified Local-First Context Bridge and Document Exporter",
+  "permissions": [
+    "storage",
+    "declarativeNetRequest",
+    "activeTab",
+    "tabs",
+    "sidePanel"
+  ],
+  "host_permissions": [
+    "https://*.chatgpt.com/*",
+    "https://*.openai.com/*",
+    "https://*.claude.ai/*",
+    "https://*.gemini.google.com/*",
+    "https://*.perplexity.ai/*",
+    "https://*.grok.com/*",
+    "https://api.notion.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "src/popup/index.html",
+    "default_title": "Omniscribe AI"
+  },
+  "options_ui": {
+    "page": "src/options/index.html",
+    "open_in_tab": true
+  },
+  "declarative_net_request": {
+    "rule_resources": [
+      {
+        "id": "ruleset_notion",
+        "enabled": true,
+        "path": "rules.json"
+      }
+    ]
+  },
+  "side_panel": {
+    "default_path": "src/sidepanel/index.html"
+  },
+  "sandbox": {
+    "pages": [
+      "src/sandbox/index.html"
+    ]
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.chatgpt.com/*",
+        "https://*.openai.com/*",
+        "https://*.claude.ai/*",
+        "https://*.gemini.google.com/*",
+        "https://*.perplexity.ai/*",
+        "https://*.grok.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "src/content-scripts/content.css"
+      ],
+      "matches": [
+        "<all_urls>"
+      ]
+    }
+  ]
+}

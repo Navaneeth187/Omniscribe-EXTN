@@ -1,0 +1,28 @@
+{
+  "name": "omniscribe-ai-extension",
+  "version": "1.0.0",
+  "description": "Consolidated Local-First Context Bridge and Document Exporter",
+  "main": "dist/background.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build && copy manifest.json dist && copy rules.json dist && xcopy /y /i src\\content-scripts\\content.css dist\\src\\content-scripts\\",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "dexie": "^4.0.8",
+    "dexie-react-hooks": "^1.1.7",
+    "jspdf": "^2.5.1",
+    "katex": "^0.16.11",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@types/chrome": "^0.0.268",
+    "@types/katex": "^0.16.7",
+    "@types/react": "^18.3.3",
+    "@types/react-dom": "^18.3.0",
+    "@vitejs/plugin-react": "^4.3.1",
+    "typescript": "^5.4.5",
+    "vite": "^5.3.1"
+  }
+}
