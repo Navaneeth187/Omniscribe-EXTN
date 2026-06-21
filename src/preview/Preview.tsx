@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { type Message } from '../database/local_db.ts';
 import { THEME_PRESETS } from './themes.ts';
 import { compileLaTeX } from '../sandbox/sandbox_client.ts';
+import 'katex/dist/katex.min.css';
 
 interface PreviewProps {
   messages: Message[];
@@ -24,31 +25,55 @@ export default function Preview({ messages, fontSize, theme, margin, lineHeight 
         const msg = messages[i];
         let content = msg.content;
 
-        // Process block math: $$ formula $$
+        // 1. Gather all block math formulas ($$.*?$$)
+        const blockMatches: { raw: string; formula: string }[] = [];
         const blockRegex = /\$\$(.*?)\$\$/gs;
         let match;
-        while ((match = blockRegex.exec(msg.content)) !== null) {
-          const rawFormula = match[0];
-          const formula = match[1].trim();
-          try {
-            const compiledHtml = await compileLaTeX(formula, true);
-            content = content.replace(rawFormula, `<div class="katex-display-block" style="margin: 12px 0; overflow-x: auto;">${compiledHtml}</div>`);
-          } catch (e) {
-            console.error('[Preview] Block LaTeX compile failed:', e);
-          }
+        while ((match = blockRegex.exec(content)) !== null) {
+          blockMatches.push({ raw: match[0], formula: match[1].trim() });
         }
 
-        // Process inline math: $ formula $
+        // Compile block math in parallel
+        const compiledBlocks = await Promise.all(
+          blockMatches.map(async (item) => {
+            try {
+              const html = await compileLaTeX(item.formula, true);
+              return { raw: item.raw, html: `<div class="katex-display-block" style="margin: 12px 0; overflow-x: auto;">${html}</div>` };
+            } catch (e) {
+              console.error('[Preview] Block LaTeX compile failed:', e);
+              return { raw: item.raw, html: `<div class="katex-display-block-error" style="color: #ef4444; margin: 12px 0;">${item.raw}</div>` };
+            }
+          })
+        );
+
+        // Replace block matches
+        for (const item of compiledBlocks) {
+          content = content.replace(item.raw, item.html);
+        }
+
+        // 2. Gather all inline math formulas ($[^$]+?$)
+        const inlineMatches: { raw: string; formula: string }[] = [];
         const inlineRegex = /\$([^$]+?)\$/g;
-        while ((match = inlineRegex.exec(msg.content)) !== null) {
-          const rawFormula = match[0];
-          const formula = match[1].trim();
-          try {
-            const compiledHtml = await compileLaTeX(formula, false);
-            content = content.replace(rawFormula, `<span class="katex-inline" style="display: inline-block;">${compiledHtml}</span>`);
-          } catch (e) {
-            console.error('[Preview] Inline LaTeX compile failed:', e);
-          }
+        while ((match = inlineRegex.exec(content)) !== null) {
+          inlineMatches.push({ raw: match[0], formula: match[1].trim() });
+        }
+
+        // Compile inline math in parallel
+        const compiledInlines = await Promise.all(
+          inlineMatches.map(async (item) => {
+            try {
+              const html = await compileLaTeX(item.formula, false);
+              return { raw: item.raw, html: `<span class="katex-inline" style="display: inline-block;">${html}</span>` };
+            } catch (e) {
+              console.error('[Preview] Inline LaTeX compile failed:', e);
+              return { raw: item.raw, html: `<span class="katex-inline-error" style="color: #ef4444;">${item.raw}</span>` };
+            }
+          })
+        );
+
+        // Replace inline matches
+        for (const item of compiledInlines) {
+          content = content.replace(item.raw, item.html);
         }
 
         // Basic line break formatting
@@ -150,6 +175,7 @@ export default function Preview({ messages, fontSize, theme, margin, lineHeight 
 
                 {/* Body Text */}
                 <div
+                  className="omniscribe-preview-body"
                   style={{
                     color: isUser ? currentTheme.userText : currentTheme.assistantText,
                     wordBreak: 'break-word'

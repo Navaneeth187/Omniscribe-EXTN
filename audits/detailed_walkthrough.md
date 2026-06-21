@@ -12,7 +12,7 @@ To load the compiled extension into Google Chrome:
    ```bash
    npm run build
    ```
-   This compilespopup, options, sidebar, and sandbox entries into the `dist/` directory and copies configuration schemas automatically.
+   This compiles popup, options, sidebar, and sandbox entries into the `dist/` directory and copies configuration schemas automatically.
 2. **Open Extensions Manager:** Launch Google Chrome and navigate to:
    ```text
    chrome://extensions/
@@ -37,11 +37,10 @@ To load the compiled extension into Google Chrome:
 ### B. The Sidebar Aggregator (`sidepanel.html`)
 *   **Access:** Click the Omniscribe extension icon or click **Open Sidebar Aggregator** in the popup menu.
 *   **Search & Tag Filters:** Type search terms to filter conversation histories by title or platform. Click tag buttons (e.g. `#research`) to narrow down logs.
-*   **Sync to Notion Workspace:**
+*   **Fast Formatted Exports:**
     1. Select any conversation card.
-    2. Input a target **Notion Parent Page or Database ID**.
-    3. Click **Sync Now**.
-    4. The syncer automatically splits large text streams into Notion-compliant paragraph blocks (< 2,000 characters) and constructs headers. Clicking the output link opens the synced page directly in Notion.
+    2. Choose from the layout quick-buttons for PDF, Markdown, Word, or JSON formats.
+    3. The file compiles and downloads instantly, featuring professional formatting custom-designed for this extension.
 
 ### C. Options Panel & Math Previewer (`options.html`)
 *   **Access:** Right-click the extension icon and select **Options**.
@@ -50,7 +49,7 @@ To load the compiled extension into Google Chrome:
     *   Inline formulas (`$x^2$`) and display formula blocks (`$$\int_{-\infty}^{\infty} e^{-x^2} dx = \sqrt{\pi}$$`) are captured dynamically.
     *   The formula is posted to a sandboxed iframe to bypass strict Manifest V3 Content Security Policies.
     *   The compiled SVG/HTML vector markup returns from the sandbox and updates the preview immediately.
-*   **Export Drivers:** Downloader buttons compile and trigger local downloads of **PDF** (rendered dynamically using `jsPDF`), **Markdown**, **Word (`.doc`)**, or structured **JSON** schema files.
+*   **Export Drivers:** Downloader buttons compile and trigger local downloads of **PDF** (rendered dynamically using `jsPDF` with custom margins and page headers/footers), **Markdown**, **Word (`.doc`)** (with styled HTML containers), or structured **JSON** schema files.
 
 ---
 
@@ -61,13 +60,12 @@ graph TD
   A[Host Pages: Claude / ChatGPT] -->|Orb Scraper| B(IndexedDB: Dexie.js)
   B -->|Syncs list| C(Sidebar Aggregator Panel)
   B -->|Loads active chat| D(Options Visual Previewer)
-  C -->|Notion Driver + DNR proxy| E(Notion Workspace API)
   D -->|postMessage| F(Sandboxed Iframe: KaTeX Compiler)
   F -->|Returns markup| D
-  D -->|Export Drivers| G[Styled PDF / MD / Word / JSON Download]
+  C -->|Export Drivers| G[Styled PDF / MD / Word / JSON Download]
+  D -->|Export Drivers| G
 ```
 
 ### Key Technical Decisions:
-*   **Zero-Cloud Footprint:** All user conversations, settings, and file rendering remain local to your browser profile.
-*   **DNR Proxy Rules:** Outgoing Notion requests flow through Declarative Net Request rules to strip headers like `Origin` and `Referer`, preventing CORS blocking without needing a remote proxy backend.
+*   **Zero-Cloud Footprint:** All user conversations, settings, and file rendering remain local to your browser profile. No cloud accounts, cross-device syncs, or remote servers are implemented.
 *   **Memory-Safe PDF Wrapping:** jsPDF line calculation logic automatically paginates blocks, wraps long text nodes, and handles line heights dynamically to match theme specifications.

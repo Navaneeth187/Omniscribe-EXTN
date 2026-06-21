@@ -1,7 +1,7 @@
 # Technical Architecture: Omniscribe AI
 **Product Version:** 1.0 (Consolidated Super-Extension)  
 **Author:** Technical Architect Team  
-**Date:** June 14, 2026  
+**Date:** June 21, 2026  
 **Status:** Architecture Design Complete
 
 ---
@@ -11,7 +11,7 @@
 Omniscribe AI utilizes a local-first architecture. All heavy computation—such as document styling, PDF formatting, syntax parsing, and database transactions—runs client-side inside the user's browser runtime. 
 
 ### 1.1. Overall Component Architecture
-The diagram below illustrates the relationship between Content Scripts (active LLM tabs), the Service Worker, sandboxed frames, storage structures, and external API services.
+The diagram below illustrates the relationship between Content Scripts (active LLM tabs), the Service Worker, sandboxed frames, and local storage structures.
 
 ```mermaid
 graph TB
@@ -29,13 +29,12 @@ graph TB
         Options[Options Settings React Portal]
         Preview[Styled Preview Viewport]
         Sidepanel[Aggregation SidePanel]
-        Sandbox[widget-sandbox.html]
+        Sandbox[sandbox/index.html]
     end
 
-    subgraph Storage & Integration Layer
+    subgraph Storage & Local Layer
         DB[(IndexedDB: Dexie.js)]
-        LocalSync[(chrome.storage.local/sync)]
-        Notion[External Notion API Endpoint]
+        LocalSync[(chrome.storage.local)]
     end
 
     %% DOM interactions
@@ -54,7 +53,6 @@ graph TB
 
     %% Background tasks
     SW -->|Read/Write Session State| LocalSync
-    SW -->|Network Rewrites: DNR| Notion
     
     %% Storage references
     Scrape_Mod -.->|Write Cache| DB
@@ -94,7 +92,7 @@ sequenceDiagram
 
 ## 2. Directory Structure
 
-The repository follows a clean React + Vite workspace config, compiling background service workers, content scripts, and page endpoints separate from one another:
+The repository follows a clean React + Vite workspace config, compiling background service workers, content scripts, and page endpoints:
 
 ```text
 omniscribe-extension/
@@ -111,15 +109,13 @@ omniscribe-extension/
 │   │   ├── icon-16.png
 │   │   ├── icon-48.png
 │   │   └── icon-128.png
-│   ├── rules/
-│   │   └── request_modifier_rule.json # Notion CORS DNR rules
-│   └── widget-sandbox.html     # HTML Sandboxing environment for KaTeX formulas
+│   └── index.html              # HTML Sandboxing environment for KaTeX formulas
 └── src/
     ├── background/
-    │   └── background.ts       # Orchestration, Tab lifecycle listeners, and Notion auth APIs
+    │   └── background.ts       # Orchestration and Tab lifecycle listeners
     ├── content-scripts/
     │   ├── content.ts          # Orchestrator for scrapers, injectors, and UI widgets
-    │   ├── scraper.ts          # Selector routines for 19+ platforms
+    │   ├── scraper.ts          # Selector routines for Claude, ChatGPT, etc.
     │   ├── injector.ts         # Editor simulations (Quill, ProseMirror, standard textareas)
     │   └── content.css         # Styling for the floating glassy orb dock
     ├── database/
@@ -130,26 +126,20 @@ omniscribe-extension/
     ├── options/                # Settings & Local history management console
     │   ├── Options.tsx
     │   └── main.tsx
-    ├── preview/                # Split-pane styled printing layout page
-    │   ├── Preview.tsx
-    │   ├── preview.css
-    │   └── themes.ts           # Styles sheets configuration arrays (Lavender, Sakura, etc.)
     ├── sidepanel/              # Aggregate history composer pane
     │   ├── SidePanel.tsx
     │   └── main.tsx
-    ├── shared/                 # Common type files, utilities, and i18n configurations
-    │   ├── types.ts
-    │   ├── i18n.ts
-    │   └── constants.ts
-    └── sandbox/                # Sandbox scripting utility for math parsing
-        └── sandbox_processor.ts
+    └── sandbox/                # Sandbox utility for math parsing
+        ├── index.html
+        ├── sandbox.ts
+        └── sandbox_client.ts
 ```
 
 ---
 
 ## 3. Database Schema Design (IndexedDB)
 
-The extension stores large dataset records locally via **IndexedDB** using **Dexie.js**. This ensures rapid querying, indexing, and prevents local cache storage quota blockages.
+The extension stores conversation logs locally via **IndexedDB** using **Dexie.js**. This ensures rapid querying, indexing, and prevents local cache storage quota blockages.
 
 ```typescript
 import Dexie, { Table } from 'dexie';
@@ -157,7 +147,7 @@ import Dexie, { Table } from 'dexie';
 export interface Conversation {
   id: string;          // Scraped hash id or auto-generated uuid
   title: string;       // Thread topic
-  platform: string;    // chatgpt | claude | gemini | deepseek
+  platform: string;    // chatgpt | claude | gemini | perplexity | grok
   url: string;         // Link to original chat log
   timestamp: number;   // Unix epoch millisecond timestamp
   tags?: string[];     // Local categorized folder tags
@@ -168,7 +158,7 @@ export interface Message {
   conversationId: string; // Foreign key referencing Conversation.id
   role: 'user' | 'assistant' | 'system';
   content: string;     // Text markdown content
-  thinkingContent?: string; // DeepSeek/Gemini internal logs
+  thinkingContent?: string; // Reasoning trace logs
   timestamp: number;
 }
 
@@ -192,12 +182,11 @@ export const db = new OmniscribeDatabase();
 
 ## 4. Frontend Architecture & State Management
 
-Omniscribe AI's frontends (Popup, Options, Preview, and Sidepanel) are written as modular React components.
+Omniscribe AI's frontends (Popup, Options, and Sidepanel) are written as modular React components.
 
 ### 4.1. Core Frontend Viewports
 1.  **Options Panel:** History index browser, theme customize dashboards, backup/restore tool.
-2.  **Document Preview Page:** Dynamic split-view container. One side holds styling options (padding size, borders, font adjustments), the other side displays a sandboxed iframe to render layouts and output targets (PDF/Word).
-3.  **Side Panel Widget:** Aggregation manager list. Enables bulk additions and sequence updates before running exports.
+2.  **Side Panel Widget:** Aggregation manager list. Enables bulk additions and sequence updates before running exports.
 
 ### 4.2. Local State Management Strategy
 Because there is no remote server, state is maintained locally. Dexie provides live hooks to keep React components reactively linked to IndexedDB storage:
@@ -215,38 +204,12 @@ In browser extensions, the "backend" is represented by the background **Service 
 1.  **Tab Creation & Handoff:**
     *   Listens to `openTab` requests from active tabs.
     *   Creates target windows.
-    *   Monitors `chrome.tabs.onUpdated`. When the target state is `complete`, it waits `2.5 seconds` (hydration margin) before messaging the tab's content script to inject the prompt.
-2.  **Notion Sync Proxy:**
-    *   Since direct content script fetch calls face CORS restrictions when pinging `notion.so`, the Service Worker handles API dispatching.
-    *   Header interception rules (`declarativeNetRequest`) modify headers on these requests before they hit Notion API routes.
+    *   Monitors `chrome.tabs.onUpdated`. When the target state is `complete`, it waits for page hydration before messaging the tab's content script to inject the prompt.
 
 ---
 
 ## 6. Authentication Flow
-
-Omniscribe AI operates under a zero-cloud credential policy.
-
-### 6.1. Notion OAuth Integration Flow
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant User as User
-    participant Opt as Options Page (React)
-    participant SW as Service Worker (background.ts)
-    participant Notion as Notion Auth Endpoint
-
-    User->>Opt: Click "Link Notion Workspace"
-    Opt->>SW: Dispatch message: "startNotionAuth"
-    SW->>SW: Call chrome.identity.launchWebAuthFlow()
-    SW->>Notion: Send authorize call with redirect URI
-    Notion-->>SW: Redirect with Authorization Code
-    SW->>Notion: POST Authorization Code to exchange for Access Token
-    Notion-->>SW: Return Access Token
-    SW->>SW: Encrypt and store Token in chrome.storage.local
-    SW-->>Opt: Send message "authSuccess"
-    Opt->>User: Display "Notion Workspace Linked Successfully"
-```
+Omniscribe AI operates under a zero-cloud credential policy. No authentication or login flows are required as all data processing and storage resides 100% locally on the user's local machine context.
 
 ---
 
@@ -257,10 +220,7 @@ Communications between components rely on Chrome’s message brokers. The schema
 ### 7.1. Message Registry Interface
 ```typescript
 type SystemMessage = 
-  | { type: 'BRIDGE_START'; target: string; prompt: string }
-  | { type: 'OPEN_PREVIEW'; conversationId: string }
-  | { type: 'SYNC_TO_NOTION'; conversationId: string }
-  | { type: 'NOTION_AUTH_START' }
+  | { type: 'TRIGGER_BRIDGE'; targetPlatform: string }
   | { type: 'TOAST_MESSAGE'; text: string; severity: 'success' | 'warning' | 'error' };
 ```
 
@@ -281,36 +241,13 @@ graph LR
     end
 
     subgraph Sandboxed Environment
-        SbIframe[widget-sandbox.html]
+        SbIframe[sandbox/index.html]
     end
 
     RawPage <-->|Isolated DOM Access| CScript
     CScript -->|postMessage text payload| SbIframe
     SbIframe -->|Renders KaTeX formulas / SVG| SbIframe
     SbIframe -->|postMessage completed HTML| CScript
-```
-
-### 8.1. Declarative Net Request (DNR) Policy
-The `rules/request_modifier_rule.json` overrides CORS constraints. Rules intercept traffic targeting Notion's api addresses and rewrite headers:
-```json
-[
-  {
-    "id": 101,
-    "priority": 1,
-    "action": {
-      "type": "modifyHeaders",
-      "requestHeaders": [
-        { "header": "origin", "operation": "set", "value": "https://www.notion.so" }
-      ]
-    },
-    "condition": {
-      "urlFilter": "https://www.notion.so/*",
-      "resourceTypes": ["xmlhttprequest"],
-      "domainType": "thirdParty",
-      "initiatorDomains": ["kagjkiiecagemklhmhkabbalfpbianbe"]
-    }
-  }
-]
 ```
 
 ---

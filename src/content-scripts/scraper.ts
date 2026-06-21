@@ -32,6 +32,13 @@ export const LLM_PLATFORMS: Record<string, ScraperConfig> = {
   }
 };
 
+export interface ScrapedMessage {
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  thinkingContent?: string;
+  timestamp: number;
+}
+
 /**
  * Identifies the current active platform based on hostname.
  */
@@ -47,35 +54,53 @@ export function getCurrentPlatform(hostname: string): string | null {
 /**
  * Extracts conversation logs from ChatGPT.
  */
-export function extractChatGPT(): string {
-  const turns: string[] = [];
+export function extractChatGPT(): ScrapedMessage[] {
+  const turns: ScrapedMessage[] = [];
   const nodes = document.querySelectorAll('[data-message-author-role]');
   
-  nodes.forEach(node => {
-    const role = node.getAttribute('data-message-author-role');
-    const label = role === 'user' ? 'User' : 'Assistant (ChatGPT)';
+  nodes.forEach((node, index) => {
+    const rawRole = node.getAttribute('data-message-author-role');
+    const role = rawRole === 'user' ? 'user' : 'assistant';
     const text = (node as HTMLElement).innerText.trim();
     if (text) {
-      turns.push(`${label}:\n${text}`);
+      // Look for thinking traces
+      const thinkingEl = node.querySelector('.thought, [class*="thought"], [class*="thinking"]');
+      let content = text;
+      let thinkingContent: string | undefined = undefined;
+      
+      if (thinkingEl) {
+        thinkingContent = (thinkingEl as HTMLElement).innerText.trim();
+        content = text.replace(thinkingContent, '').trim();
+      }
+
+      turns.push({
+        role,
+        content,
+        thinkingContent,
+        timestamp: Date.now() - (nodes.length - index) * 1000
+      });
     }
   });
 
-  return turns.join('\n\n---\n\n');
+  return turns;
 }
 
 /**
  * Extracts conversation logs from Claude.
  */
-export function extractClaude(): string {
-  const turns: string[] = [];
-  
+export function extractClaude(): ScrapedMessage[] {
+  const turns: ScrapedMessage[] = [];
   // Select user messages and assistant messages by their data test ids or common CSS class configurations
   const allMsgContainers = document.querySelectorAll(
-    '[data-testid="user-message"], [data-testid="assistant-message"], .font-claude-message, [class*="HumanTurn"], [class*="AIResponse"]'
+    '[data-testid="user-message"], [data-testid="assistant-message"], .font-claude-message, .font-claude-response, .assistant-message, [class*="HumanTurn"], [class*="AIResponse"], [class*="HumanMessage"], [class*="AssistantMessage"]'
   );
 
-  if (allMsgContainers.length > 0) {
-    allMsgContainers.forEach(node => {
+  const elements = Array.from(allMsgContainers) as HTMLElement[];
+  // Filter to parent-most containers to avoid duplicate text extraction
+  const containers = elements.filter(el => !elements.some(other => other !== el && other.contains(el)));
+
+  if (containers.length > 0) {
+    containers.forEach((node, index) => {
       const el = node as HTMLElement;
       const testId = el.getAttribute('data-testid');
       const className = el.className || '';
@@ -84,12 +109,20 @@ export function extractClaude(): string {
         el.closest('[data-testid="user-message"]') !== null ||
         testId === 'user-message' ||
         className.includes('HumanTurn') ||
-        el.closest('[class*="HumanTurn"]') !== null;
+        className.includes('HumanMessage') ||
+        className.includes('user-message') ||
+        el.closest('[class*="HumanTurn"]') !== null ||
+        el.closest('[class*="HumanMessage"]') !== null ||
+        el.closest('.font-user-message') !== null;
 
-      const label = isUser ? 'User' : 'Assistant (Claude)';
+      const role = isUser ? 'user' : 'assistant';
       const text = el.innerText.trim();
       if (text) {
-        turns.push(`${label}:\n${text}`);
+        turns.push({
+          role,
+          content: text,
+          timestamp: Date.now() - (containers.length - index) * 1000
+        });
       }
     });
   } else {
@@ -98,19 +131,23 @@ export function extractClaude(): string {
     if (mainFeed) {
       const text = (mainFeed as HTMLElement).innerText.trim();
       if (text.length > 20) {
-        return `Conversation:\n${text}`;
+        turns.push({
+          role: 'assistant',
+          content: text,
+          timestamp: Date.now()
+        });
       }
     }
   }
 
-  return turns.join('\n\n---\n\n');
+  return turns;
 }
 
 /**
  * Extracts conversation logs from Gemini.
  */
-export function extractGemini(): string {
-  const turns: string[] = [];
+export function extractGemini(): ScrapedMessage[] {
+  const turns: ScrapedMessage[] = [];
   
   // Gemini uses tags for queries and responses
   const allTurns = document.querySelectorAll(
@@ -118,16 +155,20 @@ export function extractGemini(): string {
   );
 
   if (allTurns.length > 0) {
-    allTurns.forEach(node => {
+    allTurns.forEach((node, index) => {
       const el = node as HTMLElement;
       const tag = el.tagName.toLowerCase();
       const cls = el.className || '';
       
       const isUser = tag === 'user-query' || cls.includes('user') || cls.includes('query');
-      const label = isUser ? 'User' : 'Assistant (Gemini)';
+      const role = isUser ? 'user' : 'assistant';
       const text = el.innerText.trim();
       if (text) {
-        turns.push(`${label}:\n${text}`);
+        turns.push({
+          role,
+          content: text,
+          timestamp: Date.now() - (allTurns.length - index) * 1000
+        });
       }
     });
   } else {
@@ -138,35 +179,47 @@ export function extractGemini(): string {
     
     for (let i = 0; i < maxLen; i++) {
       if (userNodes[i]) {
-        turns.push(`User:\n${(userNodes[i] as HTMLElement).innerText.trim()}`);
+        turns.push({
+          role: 'user',
+          content: (userNodes[i] as HTMLElement).innerText.trim(),
+          timestamp: Date.now() - (maxLen * 2 - i * 2) * 1000
+        });
       }
       if (modelNodes[i]) {
-        turns.push(`Assistant (Gemini):\n${(modelNodes[i] as HTMLElement).innerText.trim()}`);
+        turns.push({
+          role: 'assistant',
+          content: (modelNodes[i] as HTMLElement).innerText.trim(),
+          timestamp: Date.now() - (maxLen * 2 - i * 2 - 1) * 1000
+        });
       }
     }
   }
 
-  return turns.join('\n\n---\n\n');
+  return turns;
 }
 
 /**
  * Extracts conversation logs from Perplexity.
  */
-export function extractPerplexity(): string {
-  const turns: string[] = [];
+export function extractPerplexity(): ScrapedMessage[] {
+  const turns: ScrapedMessage[] = [];
   
   // Perplexity uses sections and prose blocks
   const blocks = document.querySelectorAll('[class*="col-span"], [class*="MessageBlock"], section');
   
   if (blocks.length > 0) {
-    blocks.forEach(block => {
+    blocks.forEach((block, index) => {
       const el = block as HTMLElement;
       const text = el.innerText.trim();
       if (text.length > 20) {
         // Find if this section contains user inputs or assistant solutions
         const isUser = el.querySelector('h1, h2, [class*="question"]') !== null;
-        const label = isUser ? 'User' : 'Assistant (Perplexity)';
-        turns.push(`${label}:\n${text}`);
+        const role = isUser ? 'user' : 'assistant';
+        turns.push({
+          role,
+          content: text,
+          timestamp: Date.now() - (blocks.length - index) * 1000
+        });
       }
     });
   } else {
@@ -177,22 +230,30 @@ export function extractPerplexity(): string {
     
     for (let i = 0; i < maxLen; i++) {
       if (questions[i]) {
-        turns.push(`User:\n${(questions[i] as HTMLElement).innerText.trim()}`);
+        turns.push({
+          role: 'user',
+          content: (questions[i] as HTMLElement).innerText.trim(),
+          timestamp: Date.now() - (maxLen * 2 - i * 2) * 1000
+        });
       }
       if (answers[i]) {
-        turns.push(`Assistant (Perplexity):\n${(answers[i] as HTMLElement).innerText.trim()}`);
+        turns.push({
+          role: 'assistant',
+          content: (answers[i] as HTMLElement).innerText.trim(),
+          timestamp: Date.now() - (maxLen * 2 - i * 2 - 1) * 1000
+        });
       }
     }
   }
 
-  return turns.join('\n\n---\n\n');
+  return turns;
 }
 
 /**
  * Extracts conversation logs from Grok.
  */
-export function extractGrok(): string {
-  const turns: string[] = [];
+export function extractGrok(): ScrapedMessage[] {
+  const turns: ScrapedMessage[] = [];
   
   // Check for data author roles or query blocks
   const userMsgs = document.querySelectorAll(
@@ -203,9 +264,9 @@ export function extractGrok(): string {
   );
 
   if (userMsgs.length > 0 || asstMsgs.length > 0) {
-    const list: { el: HTMLElement; role: string }[] = [];
-    userMsgs.forEach(n => list.push({ el: n as HTMLElement, role: 'User' }));
-    asstMsgs.forEach(n => list.push({ el: n as HTMLElement, role: 'Assistant (Grok)' }));
+    const list: { el: HTMLElement; role: 'user' | 'assistant' }[] = [];
+    userMsgs.forEach(n => list.push({ el: n as HTMLElement, role: 'user' }));
+    asstMsgs.forEach(n => list.push({ el: n as HTMLElement, role: 'assistant' }));
     
     // Sort array elements chronologically by document position hierarchy
     list.sort((a, b) => {
@@ -214,10 +275,14 @@ export function extractGrok(): string {
       return 1;
     });
 
-    list.forEach(({ el, role }) => {
+    list.forEach(({ el, role }, index) => {
       const text = el.innerText.trim();
       if (text.length > 2) {
-        turns.push(`${role}:\n${text}`);
+        turns.push({
+          role,
+          content: text,
+          timestamp: Date.now() - (list.length - index) * 1000
+        });
       }
     });
   } else {
@@ -225,23 +290,28 @@ export function extractGrok(): string {
     const rows = document.querySelectorAll(
       '[class*="FollowupQuery"], [class*="followup"], [class*="QueryBlock"], [class*="ResponseBlock"], article, [role="article"]'
     );
-    rows.forEach(row => {
+    rows.forEach((row, index) => {
       const el = row as HTMLElement;
       const cls = (el.className || '').toLowerCase();
       const text = el.innerText.trim();
       if (text.length < 3) return;
       const isUser = cls.includes('query') || cls.includes('followup') || cls.includes('user') || cls.includes('human');
-      turns.push(`${isUser ? 'User' : 'Assistant (Grok)'}:\n${text}`);
+      const role = isUser ? 'user' : 'assistant';
+      turns.push({
+        role,
+        content: text,
+        timestamp: Date.now() - (rows.length - index) * 1000
+      });
     });
   }
 
-  return turns.join('\n\n---\n\n');
+  return turns;
 }
 
 /**
  * General scrape dispatcher.
  */
-export function scrapeActiveChat(platform: string): string {
+export function scrapeActiveChat(platform: string): ScrapedMessage[] {
   console.log(`[Scraper] Initiating scrape for: ${platform}`);
   switch (platform) {
     case 'chatgpt':
@@ -256,6 +326,6 @@ export function scrapeActiveChat(platform: string): string {
       return extractGrok();
     default:
       console.warn(`[Scraper] Unknown platform request: ${platform}`);
-      return '';
+      return [];
   }
 }

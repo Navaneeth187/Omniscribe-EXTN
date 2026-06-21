@@ -1,11 +1,11 @@
 {
   "name": "omniscribe-ai-extension",
-  "version": "1.0.0",
+  "version": "1.3.4",
   "description": "Consolidated Local-First Context Bridge and Document Exporter",
   "main": "dist/background.js",
   "scripts": {
     "dev": "vite",
-    "build": "tsc && vite build && copy manifest.json dist && copy rules.json dist && xcopy /y /i src\\content-scripts\\content.css dist\\src\\content-scripts\\",
+    "build": "tsc && vite build && copy manifest.json dist && xcopy /y /i src\\content-scripts\\content.css dist\\src\\content-scripts\\",
     "preview": "vite preview"
   },
   "dependencies": {

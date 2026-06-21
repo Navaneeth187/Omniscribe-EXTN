@@ -3,18 +3,48 @@
   <head>
     <meta charset="UTF-8" />
     <title>Omniscribe Sidebar</title>
+
+    <!-- Google Fonts for High-End Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
       body {
         margin: 0;
         padding: 0;
-        background-color: #0f172a;
-        color: #f8fafc;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         overflow-x: hidden;
+        transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+      body.dark-theme {
+        background-color: #030407;
+        color: #cbd5e1;
+      }
+      body.light-theme {
+        background-color: #f8fafc;
+        color: #1e293b;
       }
     </style>
   </head>
   <body>
+    <!-- Script to prevent visual flash of incorrect theme before React boots up -->
+    <script>
+      (function() {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.get(['omniscribe-theme'], function(res) {
+            if (res['omniscribe-theme'] === 'light') {
+              document.body.classList.add('light-theme');
+            } else {
+              document.body.classList.add('dark-theme');
+            }
+          });
+        } else {
+          var systemPrefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+          document.body.classList.add(systemPrefersLight ? 'light-theme' : 'dark-theme');
+        }
+      })();
+    </script>
     <div id="sidepanel-root"></div>
     <script type="module" src="./main.tsx"></script>
   </body>

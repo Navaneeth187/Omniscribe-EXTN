@@ -4,17 +4,78 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Omniscribe AI Settings</title>
+    
+    <!-- Google Fonts for High-End Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+
     <style>
+      /* Smooth theme transition settings */
       body {
         margin: 0;
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-        background-color: #0b0f19;
-        color: #f1f5f9;
+        font-family: 'Outfit', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         min-height: 100vh;
+        position: relative;
+        overflow-x: hidden;
+        transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), color 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      }
+
+      /* Dark mode defaults */
+      body.dark-theme {
+        background-color: #030407;
+        color: #cbd5e1;
+      }
+
+      /* Light mode defaults */
+      body.light-theme {
+        background-color: #f8fafc;
+        color: #1e293b;
+      }
+
+      /* Premium Ambient Glow Effect */
+      .ambient-glow {
+        position: absolute;
+        top: -150px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 800px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.12) 0%, rgba(168, 85, 247, 0.04) 50%, transparent 100%);
+        z-index: -1;
+        pointer-events: none;
+        filter: blur(80px);
+        transition: opacity 0.3s ease;
+      }
+
+      body.light-theme .ambient-glow {
+        background: radial-gradient(circle, rgba(99, 102, 241, 0.06) 0%, rgba(168, 85, 247, 0.02) 50%, transparent 100%);
+        top: -120px;
       }
     </style>
   </head>
   <body>
+    <!-- Script to prevent visual flash of incorrect theme before React boots up -->
+    <script>
+      (function() {
+        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.get(['omniscribe-theme'], function(res) {
+            if (res['omniscribe-theme'] === 'light') {
+              document.body.classList.add('light-theme');
+            } else {
+              document.body.classList.add('dark-theme');
+            }
+          });
+        } else {
+          var systemPrefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+          document.body.classList.add(systemPrefersLight ? 'light-theme' : 'dark-theme');
+        }
+      })();
+    </script>
+
+    <!-- Ambient background layer -->
+    <div class="ambient-glow"></div>
+
     <div id="root"></div>
     <script type="module" src="./main.tsx"></script>
   </body>

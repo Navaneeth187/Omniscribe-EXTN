@@ -1,6 +1,6 @@
 /**
  * Automated Test Runner for Omniscribe AI
- * Validates critical logic paths: Notion block chunking, LaTeX scraping, and export formatting.
+ * Validates critical logic paths: LaTeX scraping and export formatting.
  */
 
 import * as assert from 'assert';
@@ -12,44 +12,7 @@ interface Message {
   thinkingContent?: string;
 }
 
-/**
- * 1. Notion Chunking Logic Verification
- */
-function testNotionChunking() {
-  console.log('--- Running Notion Chunking Tests ---');
 
-  const chunkLimit = 1900;
-  // Generate a mock message with 4500 characters (exceeds limit)
-  const longText = 'A'.repeat(4500);
-  const mockMsg: Message = {
-    role: 'assistant',
-    content: longText,
-    thinkingContent: 'Reasoning trace'
-  };
-
-  // Run the splitting algorithm in isolation
-  const blocks: any[] = [];
-  const chunkSize = 1900;
-  
-  for (let i = 0; i < mockMsg.content.length; i += chunkSize) {
-    const chunk = mockMsg.content.substring(i, i + chunkSize);
-    blocks.push({
-      object: 'block',
-      type: 'paragraph',
-      paragraph: {
-        rich_text: [{ type: 'text', text: { content: chunk } }]
-      }
-    });
-  }
-
-  // Assertions
-  assert.strictEqual(blocks.length, 3, 'Should chunk 4500 characters into exactly 3 blocks.');
-  assert.strictEqual(blocks[0].paragraph.rich_text[0].text.content.length, chunkLimit, 'First block should contain 1900 characters.');
-  assert.strictEqual(blocks[1].paragraph.rich_text[0].text.content.length, chunkLimit, 'Second block should contain 1900 characters.');
-  assert.strictEqual(blocks[2].paragraph.rich_text[0].text.content.length, 700, 'Third block should contain remaining 700 characters.');
-
-  console.log('✓ Notion chunking test passed.');
-}
 
 /**
  * 2. LaTeX Formula RegEx Scraper Verification
@@ -102,7 +65,6 @@ function testPageMarginConstraints() {
 // Master execution block
 function main() {
   try {
-    testNotionChunking();
     testLaTeXRegex();
     testPageMarginConstraints();
     console.log('\n=========================================');

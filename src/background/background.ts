@@ -12,7 +12,6 @@ chrome.runtime.onInstalled.addListener((details) => {
       settings: {
         autoSubmit: true,
         retentionDays: 30,
-        notionToken: '',
         preamble: 'The following is context from my previous session: '
       }
     }, () => {

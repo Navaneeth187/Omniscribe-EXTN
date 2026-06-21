@@ -50,6 +50,28 @@ class OmniscribeContentScript {
 
     // Handle URL change triggers for SPAs
     this.observeURLChanges();
+
+    // Listen for bridging commands from popup/background
+    chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+      if (message.type === 'TRIGGER_BRIDGE') {
+        this.handleBridgeContext(message.targetPlatform);
+        sendResponse({ success: true });
+        return false;
+      }
+      if (message.type === 'SCRAPE_CURRENT_PAGE') {
+        (async () => {
+          try {
+            const result = await this.scrapeAndSaveCurrentSession();
+            sendResponse({ success: true, payload: result });
+          } catch (err) {
+            console.error('[Content] Scrape failed:', err);
+            sendResponse({ success: false, error: (err as Error).message });
+          }
+        })();
+        return true; // Keep message channel open for async response
+      }
+      return false;
+    });
   }
 
   /**
@@ -237,10 +259,10 @@ class OmniscribeContentScript {
     if (!this.currentPlatform) return;
     this.showToast('Extracting conversation history...', 'info');
 
-    // Extract text turns
-    const conversationText = scrapeActiveChat(this.currentPlatform);
+    // Extract structured message turns
+    const scrapedTurns = scrapeActiveChat(this.currentPlatform);
 
-    if (!conversationText || conversationText.trim().length < 5) {
+    if (scrapedTurns.length === 0) {
       this.showToast('No active conversation history found to bridge.', 'error');
       return;
     }
@@ -248,29 +270,52 @@ class OmniscribeContentScript {
     // Save the conversation locally before jumping
     const conversationId = `bridge-${Date.now()}`;
     const timestamp = Date.now();
-    
+
+    // Determine a descriptive title from the first user query, falling back if none
+    const firstUserMsg = scrapedTurns.find(t => t.role === 'user');
+    const topicSnippet = firstUserMsg
+      ? (firstUserMsg.content.substring(0, 50).trim() + (firstUserMsg.content.length > 50 ? '...' : ''))
+      : 'Untitled Session';
+    const conversationTitle = `${LLM_PLATFORMS[this.currentPlatform].name}: ${topicSnippet}`;
+
+    // Map the turns for IndexedDB storage
+    const dbMessages = scrapedTurns.map(t => ({
+      conversationId,
+      role: t.role,
+      content: t.content,
+      thinkingContent: t.thinkingContent,
+      timestamp: t.timestamp
+    }));
+
+    // Append bridging system trace message
+    dbMessages.push({
+      conversationId,
+      role: 'system',
+      content: `Conversation bridged to ${LLM_PLATFORMS[targetPlatform].name}`,
+      thinkingContent: undefined,
+      timestamp: timestamp + 1000
+    });
+
     // Save to local IndexedDB via background routing message to avoid multi-thread locking
     await chrome.runtime.sendMessage({
       type: 'SAVE_LOCAL_CONVERSATION',
       payload: {
         conversation: {
           id: conversationId,
-          title: `Bridged from ${LLM_PLATFORMS[this.currentPlatform].name}`,
+          title: conversationTitle,
           platform: this.currentPlatform,
           url: window.location.href,
           timestamp,
           tags: ['bridged']
         },
-        messages: [
-          {
-            conversationId,
-            role: 'system',
-            content: `Conversation bridged to ${LLM_PLATFORMS[targetPlatform].name}`,
-            timestamp
-          }
-        ]
+        messages: dbMessages
       }
     });
+
+    // Build the plain text prompt for the handoff
+    const conversationText = scrapedTurns
+      .map(m => `${m.role === 'user' ? 'User' : 'Assistant (' + LLM_PLATFORMS[this.currentPlatform!].name + ')'}:\n${m.content}`)
+      .join('\n\n---\n\n');
 
     // Query configuration values from chrome local options storage
     chrome.storage.local.get(['settings'], (res) => {
@@ -375,6 +420,57 @@ class OmniscribeContentScript {
       toast.classList.remove('visible');
       setTimeout(() => toast.remove(), 300);
     }, 3200);
+  }
+
+  /**
+   * Scrapes the active chat thread context and saves it locally inside IndexedDB.
+   */
+  private async scrapeAndSaveCurrentSession(): Promise<{ conversation: any; messages: any[] }> {
+    if (!this.currentPlatform) {
+      throw new Error('Active tab is not a supported AI platform.');
+    }
+
+    const scrapedTurns = scrapeActiveChat(this.currentPlatform);
+    if (!scrapedTurns || scrapedTurns.length === 0) {
+      throw new Error('No active conversation history detected on this page.');
+    }
+
+    const conversationId = `scraped-${Date.now()}`;
+    const timestamp = Date.now();
+
+    const firstUserMsg = scrapedTurns.find(t => t.role === 'user');
+    const topicSnippet = firstUserMsg
+      ? (firstUserMsg.content.substring(0, 50).trim() + (firstUserMsg.content.length > 50 ? '...' : ''))
+      : 'Untitled Session';
+    const conversationTitle = `${LLM_PLATFORMS[this.currentPlatform].name}: ${topicSnippet}`;
+
+    const dbMessages = scrapedTurns.map(t => ({
+      conversationId,
+      role: t.role,
+      content: t.content,
+      thinkingContent: t.thinkingContent,
+      timestamp: t.timestamp
+    }));
+
+    const conversation = {
+      id: conversationId,
+      title: conversationTitle,
+      platform: this.currentPlatform,
+      url: window.location.href,
+      timestamp,
+      tags: ['scraped']
+    };
+
+    // Save to IndexedDB via background script messaging
+    await chrome.runtime.sendMessage({
+      type: 'SAVE_LOCAL_CONVERSATION',
+      payload: {
+        conversation,
+        messages: dbMessages
+      }
+    });
+
+    return { conversation, messages: dbMessages };
   }
 }
 

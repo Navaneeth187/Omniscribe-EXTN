@@ -1,21 +1,45 @@
 import { useState, useEffect } from 'react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, type Message } from '../database/local_db.ts';
-import { syncConversationToNotion } from '../integrations/notion.ts';
+import { exportToMarkdown, exportToJSON, exportToDocx, exportToPDF } from '../exporters/export_drivers.ts';
 
 export default function SidePanel() {
+  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  useEffect(() => {
+    if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
+      chrome.storage.local.get(['omniscribe-theme'], (res) => {
+        if (res['omniscribe-theme']) {
+          setTheme(res['omniscribe-theme']);
+        }
+      });
+    }
+
+    const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
+      if (areaName === 'local' && changes['omniscribe-theme']) {
+        setTheme(changes['omniscribe-theme'].newValue);
+      }
+    };
+    
+    if (typeof chrome !== 'undefined' && chrome.storage) {
+      chrome.storage.onChanged.addListener(handleStorageChange);
+      return () => {
+        chrome.storage.onChanged.removeListener(handleStorageChange);
+      };
+    }
+    return;
+  }, []);
+
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTag, setSelectedTag] = useState('');
   const [selectedChatId, setSelectedChatId] = useState<string | null>(null);
-  
-  // Notion Sync States
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncUrl, setSyncUrl] = useState('');
-  const [syncError, setSyncError] = useState('');
-  const [parentId, setParentId] = useState('');
 
-  // Fetch settings for Notion
-  const [notionToken, setNotionToken] = useState('');
+  // Settings for PDF compilation
+  const [pdfSettings, setPdfSettings] = useState({
+    fontSize: 14,
+    theme: 'slate',
+    margin: 15
+  });
 
   // Read chats and tags dynamically from local Dexie database
   const conversations = useLiveQuery(async () => {
@@ -39,13 +63,16 @@ export default function SidePanel() {
   // Extract unique tags lists
   const allTags = Array.from(new Set(conversations.flatMap(c => c.tags || [])));
 
-  // Load Notion settings from chrome local storage
+  // Load settings from chrome local storage
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
       chrome.storage.local.get(['settings'], (res) => {
         if (res.settings) {
-          setNotionToken(res.settings.notionToken || '');
-          // Default fallback page id is empty
+          setPdfSettings({
+            fontSize: res.settings.fontSize || 14,
+            theme: res.settings.theme || 'slate',
+            margin: res.settings.margin || 15
+          });
         }
       });
     }
@@ -67,35 +94,7 @@ export default function SidePanel() {
       .catch(err => console.error('[SidePanel] Failed to retrieve messages:', err));
   }, [selectedChatId]);
 
-  const handleSyncToNotion = async () => {
-    if (!selectedChatId || !activeChat) return;
-    if (!notionToken.trim()) {
-      setSyncError('Notion Token not configured. Please visit extension Settings.');
-      return;
-    }
-    if (!parentId.trim()) {
-      setSyncError('Please enter a Notion Parent Page or Database ID.');
-      return;
-    }
 
-    setIsSyncing(true);
-    setSyncError('');
-    setSyncUrl('');
-
-    try {
-      const url = await syncConversationToNotion({
-        token: notionToken,
-        parentId: parentId.trim(),
-        title: activeChat.title,
-        messages: activeMessages
-      });
-      setSyncUrl(url);
-    } catch (err) {
-      setSyncError((err as Error).message || 'Sync operation failed.');
-    } finally {
-      setIsSyncing(false);
-    }
-  };
 
   const handleQuickBridge = (targetPlatform: string) => {
     if (activeMessages.length === 0) return;
@@ -125,6 +124,52 @@ export default function SidePanel() {
     });
   };
 
+  const handleExport = (format: 'pdf' | 'md' | 'docx' | 'json') => {
+    if (!activeChat || activeMessages.length === 0) return;
+    try {
+      switch (format) {
+        case 'pdf':
+          exportToPDF(activeChat.title, activeMessages, pdfSettings, activeChat);
+          break;
+        case 'md':
+          exportToMarkdown(activeChat.title, activeMessages, activeChat);
+          break;
+        case 'docx':
+          exportToDocx(activeChat.title, activeMessages, activeChat);
+          break;
+        case 'json':
+          exportToJSON(activeChat.title, activeMessages, activeChat);
+          break;
+      }
+    } catch (err) {
+      console.error('[SidePanel] Export failed:', err);
+    }
+  };
+
+  const isDark = theme === 'dark';
+
+  useEffect(() => {
+    if (isDark) {
+      document.body.classList.remove('light-theme');
+      document.body.classList.add('dark-theme');
+    } else {
+      document.body.classList.remove('dark-theme');
+      document.body.classList.add('light-theme');
+    }
+  }, [isDark]);
+
+  // Theme-aware styles
+  const dynamicBg = isDark ? '#030407' : '#f1f5f9';
+  const dynamicCardBg = isDark ? '#11131c' : '#ffffff';
+  const dynamicBorderColor = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.08)';
+  const dynamicTextColor = isDark ? '#cbd5e1' : '#1e293b';
+  const dynamicHeadingColor = isDark ? '#f8fafc' : '#0f172a';
+  const dynamicSubTextColor = isDark ? '#64748b' : '#475569';
+  const dynamicAccentColor = isDark ? '#6366f1' : '#4f46e5';
+
+  const dynamicInputBg = isDark ? 'rgba(255, 255, 255, 0.02)' : '#ffffff';
+  const dynamicInputBorder = isDark ? 'rgba(255, 255, 255, 0.06)' : 'rgba(0, 0, 0, 0.1)';
+
   return (
     <div style={{
       display: 'flex',
@@ -132,23 +177,24 @@ export default function SidePanel() {
       height: '100vh',
       boxSizing: 'border-box',
       padding: '16px',
-      gap: '16px',
-      background: '#0f172a',
-      color: '#f8fafc'
+      gap: '12px',
+      background: dynamicBg,
+      color: dynamicTextColor,
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif',
+      transition: 'background 0.15s ease'
     }}>
       {/* Header Deck */}
       <div>
         <h2 style={{
           margin: 0,
-          fontSize: '18px',
-          background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)',
-          WebkitBackgroundClip: 'text',
-          WebkitTextFillColor: 'transparent',
-          fontWeight: 'bold'
+          fontSize: '15px',
+          fontWeight: 600,
+          letterSpacing: '-0.02em',
+          color: dynamicHeadingColor
         }}>
-          Omniscribe Sidebar
+          Omniscribe Ledger
         </h2>
-        <span style={{ fontSize: '11px', color: '#64748b' }}>Unified Chat Aggregator</span>
+        <span style={{ fontSize: '11px', color: dynamicSubTextColor }}>Local archive & activity history</span>
       </div>
 
       {/* Search Input */}
@@ -159,12 +205,13 @@ export default function SidePanel() {
         onChange={(e) => setSearchQuery(e.target.value)}
         style={{
           padding: '8px 12px',
-          background: '#1e293b',
-          border: '1px solid rgba(255,255,255,0.06)',
+          background: dynamicInputBg,
+          border: `1px solid ${dynamicInputBorder}`,
           borderRadius: '6px',
-          color: '#f8fafc',
-          fontSize: '13px',
-          outline: 'none'
+          color: dynamicTextColor,
+          fontSize: '12px',
+          outline: 'none',
+          transition: 'all 0.15s ease'
         }}
       />
 
@@ -174,14 +221,16 @@ export default function SidePanel() {
           <button
             onClick={() => setSelectedTag('')}
             style={{
-              padding: '2px 8px',
-              backgroundColor: !selectedTag ? '#6366f1' : '#1e293b',
-              border: 'none',
-              borderRadius: '4px',
+              padding: '4px 10px',
+              backgroundColor: !selectedTag ? dynamicAccentColor : (isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'),
+              border: `1px solid ${!selectedTag ? 'transparent' : dynamicBorderColor}`,
+              borderRadius: '6px',
               fontSize: '11px',
-              color: '#fff',
+              fontWeight: 500,
+              color: !selectedTag ? '#ffffff' : dynamicTextColor,
               cursor: 'pointer',
-              whiteSpace: 'nowrap'
+              whiteSpace: 'nowrap',
+              transition: 'all 0.15s ease'
             }}
           >
             All
@@ -191,14 +240,16 @@ export default function SidePanel() {
               key={tag}
               onClick={() => setSelectedTag(tag)}
               style={{
-                padding: '2px 8px',
-                backgroundColor: selectedTag === tag ? '#6366f1' : '#1e293b',
-                border: 'none',
-                borderRadius: '4px',
+                padding: '4px 10px',
+                backgroundColor: selectedTag === tag ? dynamicAccentColor : (isDark ? 'rgba(255,255,255,0.03)' : '#ffffff'),
+                border: `1px solid ${selectedTag === tag ? 'transparent' : dynamicBorderColor}`,
+                borderRadius: '6px',
                 fontSize: '11px',
-                color: '#fff',
+                fontWeight: 500,
+                color: selectedTag === tag ? '#ffffff' : dynamicTextColor,
                 cursor: 'pointer',
-                whiteSpace: 'nowrap'
+                whiteSpace: 'nowrap',
+                transition: 'all 0.15s ease'
               }}
             >
               #{tag}
@@ -219,7 +270,7 @@ export default function SidePanel() {
           /* Chats List */
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {conversations.length === 0 ? (
-              <div style={{ textAlign: 'center', color: '#64748b', fontSize: '12px', marginTop: '20px' }}>
+              <div style={{ textAlign: 'center', color: dynamicSubTextColor, fontSize: '12px', marginTop: '20px' }}>
                 No synced conversations match.
               </div>
             ) : (
@@ -229,35 +280,43 @@ export default function SidePanel() {
                   onClick={() => setSelectedChatId(chat.id)}
                   style={{
                     padding: '12px',
-                    background: 'rgba(255,255,255,0.02)',
-                    border: '1px solid rgba(255,255,255,0.04)',
-                    borderRadius: '8px',
+                    background: dynamicCardBg,
+                    border: `1px solid ${dynamicBorderColor}`,
+                    borderRadius: '12px',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '6px',
-                    transition: 'border-color 0.2s'
+                    gap: '8px',
+                    transition: 'all 0.15s ease',
+                    boxShadow: isDark ? 'none' : '0 1px 3px rgba(0,0,0,0.02)'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.borderColor = '#6366f1'}
-                  onMouseLeave={(e) => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.04)'}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.borderColor = dynamicAccentColor;
+                    if (!isDark) e.currentTarget.style.boxShadow = '0 4px 12px rgba(79, 70, 229, 0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.borderColor = dynamicBorderColor;
+                    if (!isDark) e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.02)';
+                  }}
                 >
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <span style={{
                       fontSize: '9px',
-                      background: 'rgba(99,102,241,0.15)',
-                      color: '#818cf8',
-                      padding: '1px 6px',
+                      background: isDark ? 'rgba(99,102,241,0.15)' : 'rgba(79,70,229,0.06)',
+                      color: isDark ? '#a5b4fc' : '#4f46e5',
+                      padding: '2px 8px',
                       borderRadius: '4px',
                       textTransform: 'uppercase',
-                      fontWeight: 'bold'
+                      fontWeight: 600,
+                      letterSpacing: '0.02em'
                     }}>
                       {chat.platform}
                     </span>
-                    <span style={{ fontSize: '10px', color: '#64748b' }}>
+                    <span style={{ fontSize: '10px', color: dynamicSubTextColor }}>
                       {new Date(chat.timestamp).toLocaleDateString()}
                     </span>
                   </div>
-                  <div style={{ fontSize: '13px', fontWeight: 600, color: '#f1f5f9', lineBreak: 'anywhere' }}>
+                  <div style={{ fontSize: '13px', fontWeight: 500, color: dynamicHeadingColor, lineBreak: 'anywhere' }}>
                     {chat.title}
                   </div>
                 </div>
@@ -271,116 +330,213 @@ export default function SidePanel() {
             <button
               onClick={() => {
                 setSelectedChatId(null);
-                setSyncUrl('');
-                setSyncError('');
               }}
               style={{
                 alignSelf: 'flex-start',
                 padding: '4px 10px',
                 background: 'transparent',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: '4px',
-                color: '#94a3b8',
+                border: `1px solid ${dynamicBorderColor}`,
+                borderRadius: '6px',
+                color: dynamicTextColor,
                 fontSize: '11px',
-                cursor: 'pointer'
+                fontWeight: 500,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                transition: 'all 0.15s ease'
               }}
+              onMouseEnter={(e) => e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)'}
+              onMouseLeave={(e) => e.currentTarget.style.backgroundColor = 'transparent'}
             >
-              ← Back to List
+              <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                <line x1="19" y1="12" x2="5" y2="12" />
+                <polyline points="12 19 5 12 12 5" />
+              </svg>
+              Back to List
             </button>
 
             {/* Inspector header */}
             <div>
-              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#f1f5f9', marginBottom: '4px' }}>
+              <div style={{ fontSize: '14px', fontWeight: 600, color: dynamicHeadingColor, marginBottom: '4px', letterSpacing: '-0.01em' }}>
                 {activeChat?.title}
               </div>
-              <span style={{ fontSize: '10px', color: '#64748b' }}>
-                Platform: {activeChat?.platform.toUpperCase()} | Synced turns: {activeMessages.length}
+              <span style={{ fontSize: '10px', color: dynamicSubTextColor }}>
+                Platform: {activeChat?.platform.toUpperCase()} &bull; Synced turns: {activeMessages.length}
               </span>
             </div>
 
-            {/* Notion Syncer panel */}
+            {/* Export Options Panel */}
             <div style={{
-              background: 'rgba(255,255,255,0.01)',
-              border: '1px solid rgba(255,255,255,0.04)',
-              borderRadius: '8px',
+              background: dynamicCardBg,
+              border: `1px solid ${dynamicBorderColor}`,
+              borderRadius: '12px',
               padding: '12px',
               display: 'flex',
               flexDirection: 'column',
               gap: '10px'
             }}>
-              <div style={{ fontSize: '12px', fontWeight: 'bold' }}>Sync to Notion Workspace</div>
-              <input
-                type="text"
-                placeholder="Notion Parent Page or Database ID"
-                value={parentId}
-                onChange={(e) => setParentId(e.target.value)}
-                style={{
-                  padding: '6px 10px',
-                  background: '#0f172a',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: '4px',
-                  color: '#fff',
-                  fontSize: '11px',
-                  outline: 'none'
-                }}
-              />
-              <button
-                onClick={handleSyncToNotion}
-                disabled={isSyncing}
-                style={{
-                  padding: '8px',
-                  background: '#6366f1',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '4px',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  cursor: isSyncing ? 'not-allowed' : 'pointer',
-                  opacity: isSyncing ? 0.6 : 1
-                }}
-              >
-                {isSyncing ? 'Syncing to Notion...' : 'Sync Now'}
-              </button>
-
-              {syncUrl && (
-                <a
-                  href={syncUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  style={{
-                    fontSize: '11px',
-                    color: '#10b981',
-                    textDecoration: 'underline',
-                    textAlign: 'center',
-                    marginTop: '4px'
-                  }}
-                >
-                  🚀 Click to Open in Notion
-                </a>
-              )}
-              {syncError && (
-                <div style={{ fontSize: '10px', color: '#ef4444', textAlign: 'center' }}>
-                  {syncError}
-                </div>
-              )}
-            </div>
-
-            {/* Quick Handoff controls */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <div style={{ fontSize: '11px', fontWeight: 'bold', color: '#64748b' }}>QUICK CONTEXT BRIDGE:</div>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: dynamicSubTextColor, letterSpacing: '0.05em' }}>EXPORT DOCUMENT:</div>
+              
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                 <button
-                  onClick={() => handleQuickBridge('chatgpt')}
-                  style={{ padding: '6px', fontSize: '11px', background: '#1e293b', color: '#fff', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', cursor: 'pointer' }}
+                  onClick={() => handleExport('pdf')}
+                  style={{
+                    padding: '8px 6px',
+                    fontSize: '11px',
+                    background: isDark ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.04)',
+                    color: isDark ? '#fca5a5' : '#ef4444',
+                    border: `1px solid ${isDark ? 'rgba(239, 68, 68, 0.2)' : 'rgba(239, 68, 68, 0.15)'}`,
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(239, 68, 68, 0.15)' : 'rgba(239, 68, 68, 0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(239, 68, 68, 0.08)' : 'rgba(239, 68, 68, 0.04)';
+                  }}
                 >
-                  Bridge to ChatGPT
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  PDF Document
                 </button>
                 <button
-                  onClick={() => handleQuickBridge('claude')}
-                  style={{ padding: '6px', fontSize: '11px', background: '#1e293b', color: '#fff', border: '1px solid rgba(255,255,255,0.05)', borderRadius: '4px', cursor: 'pointer' }}
+                  onClick={() => handleExport('md')}
+                  style={{
+                    padding: '8px 6px',
+                    fontSize: '11px',
+                    background: isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.04)',
+                    color: isDark ? '#93c5fd' : '#2563eb',
+                    border: `1px solid ${isDark ? 'rgba(59, 130, 246, 0.2)' : 'rgba(59, 130, 246, 0.15)'}`,
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(59, 130, 246, 0.15)' : 'rgba(59, 130, 246, 0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(59, 130, 246, 0.08)' : 'rgba(59, 130, 246, 0.04)';
+                  }}
                 >
-                  Bridge to Claude
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  Markdown Spec
                 </button>
+              </div>
+              
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                <button
+                  onClick={() => handleExport('docx')}
+                  style={{
+                    padding: '8px 6px',
+                    fontSize: '11px',
+                    background: isDark ? 'rgba(99, 102, 241, 0.08)' : 'rgba(79, 70, 229, 0.04)',
+                    color: isDark ? '#c7d2fe' : '#4f46e5',
+                    border: `1px solid ${isDark ? 'rgba(99, 102, 241, 0.2)' : 'rgba(79, 70, 229, 0.15)'}`,
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(99, 102, 241, 0.15)' : 'rgba(79, 70, 229, 0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(99, 102, 241, 0.08)' : 'rgba(79, 70, 229, 0.04)';
+                  }}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  Word Docx
+                </button>
+                <button
+                  onClick={() => handleExport('json')}
+                  style={{
+                    padding: '8px 6px',
+                    fontSize: '11px',
+                    background: isDark ? 'rgba(244, 63, 94, 0.08)' : 'rgba(244, 63, 94, 0.04)',
+                    color: isDark ? '#fda4af' : '#e11d48',
+                    border: `1px solid ${isDark ? 'rgba(244, 63, 94, 0.2)' : 'rgba(244, 63, 94, 0.15)'}`,
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    transition: 'all 0.15s ease',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '4px'
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(244, 63, 94, 0.15)' : 'rgba(244, 63, 94, 0.08)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.backgroundColor = isDark ? 'rgba(244, 63, 94, 0.08)' : 'rgba(244, 63, 94, 0.04)';
+                  }}
+                >
+                  <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                    <polyline points="14 2 14 8 20 8" />
+                  </svg>
+                  Archival JSON
+                </button>
+              </div>
+            </div>
+
+            {/* Quick Handoff Platform selector */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <div style={{ fontSize: '10px', fontWeight: 700, color: dynamicSubTextColor, letterSpacing: '0.05em' }}>QUICK CONTEXT BRIDGE:</div>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
+                {['chatgpt', 'claude', 'gemini', 'perplexity', 'grok'].map(platformId => (
+                  <button
+                    key={platformId}
+                    onClick={() => handleQuickBridge(platformId)}
+                    style={{
+                      padding: '8px 0',
+                      borderRadius: '6px',
+                      border: `1px solid ${dynamicBorderColor}`,
+                      backgroundColor: 'transparent',
+                      color: dynamicTextColor,
+                      fontSize: '10px',
+                      fontWeight: 500,
+                      cursor: 'pointer',
+                      transition: 'all 0.15s ease',
+                      outline: 'none'
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.03)';
+                      e.currentTarget.style.borderColor = dynamicAccentColor;
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = 'transparent';
+                      e.currentTarget.style.borderColor = dynamicBorderColor;
+                    }}
+                  >
+                    {platformId === 'perplexity' ? 'Perplex' : platformId.charAt(0).toUpperCase() + platformId.slice(1, 4)}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -388,18 +544,35 @@ export default function SidePanel() {
             <div style={{
               flex: 1,
               overflowY: 'auto',
-              borderTop: '1px solid rgba(255,255,255,0.06)',
+              borderTop: `1px solid ${dynamicBorderColor}`,
               paddingTop: '10px',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px'
             }}>
               {activeMessages.map((m, idx) => (
-                <div key={idx} style={{ fontSize: '12px' }}>
-                  <div style={{ fontWeight: 'bold', color: m.role === 'user' ? '#818cf8' : '#a855f7', marginBottom: '2px' }}>
+                <div key={idx} style={{ fontSize: '12px', lineHeight: '1.4' }}>
+                  <div style={{
+                    fontWeight: 600,
+                    color: m.role === 'user' ? (isDark ? '#818cf8' : '#4f46e5') : (isDark ? '#a78bfa' : '#6d28d9'),
+                    marginBottom: '2px',
+                    fontSize: '11px',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.02em'
+                  }}>
                     {m.role === 'user' ? 'User' : 'Assistant'}
                   </div>
-                  <div style={{ color: '#cbd5e1', lineBreak: 'anywhere', whiteSpace: 'pre-wrap' }}>{m.content}</div>
+                  <div style={{
+                    color: dynamicTextColor,
+                    lineBreak: 'anywhere',
+                    whiteSpace: 'pre-wrap',
+                    background: m.role === 'user' ? (isDark ? 'rgba(255,255,255,0.015)' : 'rgba(0,0,0,0.01)') : 'transparent',
+                    padding: m.role === 'user' ? '6px 10px' : '0',
+                    borderRadius: '6px',
+                    border: m.role === 'user' ? `1px solid ${dynamicBorderColor}` : 'none'
+                  }}>
+                    {m.content}
+                  </div>
                 </div>
               ))}
             </div>

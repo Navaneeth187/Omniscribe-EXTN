@@ -1,11 +1,10 @@
 {
   "manifest_version": 3,
   "name": "Omniscribe AI",
-  "version": "1.0.0",
+  "version": "1.3.4",
   "description": "Unified Local-First Context Bridge and Document Exporter",
   "permissions": [
     "storage",
-    "declarativeNetRequest",
     "activeTab",
     "tabs",
     "sidePanel"
@@ -16,8 +15,7 @@
     "https://*.claude.ai/*",
     "https://*.gemini.google.com/*",
     "https://*.perplexity.ai/*",
-    "https://*.grok.com/*",
-    "https://api.notion.com/*"
+    "https://*.grok.com/*"
   ],
   "background": {
     "service_worker": "background.js",
@@ -30,15 +28,6 @@
   "options_ui": {
     "page": "src/options/index.html",
     "open_in_tab": true
-  },
-  "declarative_net_request": {
-    "rule_resources": [
-      {
-        "id": "ruleset_notion",
-        "enabled": true,
-        "path": "rules.json"
-      }
-    ]
   },
   "side_panel": {
     "default_path": "src/sidepanel/index.html"
