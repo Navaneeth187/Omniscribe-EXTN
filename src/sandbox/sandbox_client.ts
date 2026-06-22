@@ -1,5 +1,5 @@
 /**
- * Sandbox Client Manager for Omniscribe AI
+ * Sandbox Client Manager for RelayOne AI
  * Initiates the hidden sandbox iframe and routes mathematical
  * formulas to KaTeX for execution, returning compiled HTML tags.
  */
@@ -14,7 +14,7 @@ function initSandboxIframe(): HTMLIFrameElement {
   if (sandboxIframe) return sandboxIframe;
 
   sandboxIframe = document.createElement('iframe');
-  sandboxIframe.id = 'omniscribe-math-sandbox';
+  sandboxIframe.id = 'relayone-math-sandbox';
   sandboxIframe.src = chrome.runtime.getURL('src/sandbox/index.html');
   sandboxIframe.style.display = 'none';
 

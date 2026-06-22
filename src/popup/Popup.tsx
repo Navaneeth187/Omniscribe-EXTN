@@ -24,7 +24,7 @@ const FORMATS_LIST = [
 export default function Popup() {
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     if (typeof window !== 'undefined' && localStorage) {
-      return (localStorage.getItem('omniscribe-theme') as 'dark' | 'light') || 'dark';
+      return (localStorage.getItem('relayone-theme') as 'dark' | 'light') || 'dark';
     }
     return 'dark';
   });
@@ -46,9 +46,9 @@ export default function Popup() {
   const conversations = useLiveQuery(() => db.conversations.toArray()) || [];
 
   useEffect(() => {
-    localStorage.setItem('omniscribe-theme', theme);
+    localStorage.setItem('relayone-theme', theme);
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.set({ 'omniscribe-theme': theme });
+      chrome.storage.local.set({ 'relayone-theme': theme });
     }
   }, [theme]);
 
@@ -232,7 +232,7 @@ export default function Popup() {
             showToast('Word template compiled!', 'success');
             break;
           case 'image':
-            exportToImageCard(exportTitle, exportMessages, exportMeta?.platform || 'OmniScribe');
+            exportToImageCard(exportTitle, exportMessages, exportMeta?.platform || 'RelayOne');
             showToast('Graphic snapshot compiled!', 'success');
             break;
           case 'json':
@@ -350,7 +350,7 @@ export default function Popup() {
 
     ctx.fillStyle = '#818cf8';
     ctx.font = 'bold 12px system-ui, sans-serif';
-    ctx.fillText('OMNISCRIBE AI PIPELINE EXPORT', 70, 545);
+    ctx.fillText('RELAYONE AI PIPELINE EXPORT', 70, 545);
 
     canvas.toBlob((blob) => {
       if (blob) {
@@ -479,7 +479,7 @@ export default function Popup() {
             </svg>
           </div>
           <span style={{ fontSize: '14px', fontWeight: 600, color: dynamicTextColor, letterSpacing: '-0.02em' }}>
-            OmniScribe Console
+            RelayOne Console
           </span>
         </div>
         <div style={{

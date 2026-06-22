@@ -1,4 +1,4 @@
-# Product Audit & Review: Omniscribe AI
+# Product Audit & Review: RelayOne AI
 **Consolidated Product Analysis from 5 Key Perspectives**  
 **Perspectives:** Product Manager, UX Expert, Startup Founder, Senior Engineer, Investor  
 **Date:** June 21, 2026
@@ -8,8 +8,8 @@
 ## 1. Product Summary
 
 ### Simple Language Explanation
-Omniscribe AI is a smart browser assistant that acts as a bridge and a vault for your AI chats. 
-*   **The Bridge:** If you are talking to Claude in one tab and want to continue the conversation in ChatGPT, you click a single button. Omniscribe automatically copies your conversation history, opens ChatGPT in a new tab, and pastes your chat history directly into ChatGPT so you can continue typing immediately without repeating yourself.
+RelayOne AI is a smart browser assistant that acts as a bridge and a vault for your AI chats. 
+*   **The Bridge:** If you are talking to Claude in one tab and want to continue the conversation in ChatGPT, you click a single button. RelayOne automatically copies your conversation history, opens ChatGPT in a new tab, and pastes your chat history directly into ChatGPT so you can continue typing immediately without repeating yourself.
 *   **The Vault:** It automatically saves your conversations on your own computer. You can browse them, tweak their visual styles (fonts, spacing, themes), and export them as beautiful print-ready PDFs or markdown files with a single click. It is private, fast, and works completely offline.
 
 ---
@@ -27,12 +27,12 @@ and click the "ChatGPT" icon.
   │
   ▼
 [Step 3: Background Transition]
-Omniscribe scrapes the active Claude chat logs, appends a handoff preamble, stores it 
+RelayOne scrapes the active Claude chat logs, appends a handoff preamble, stores it 
 temporingly in local memory, and opens ChatGPT in a new tab.
   │
   ▼
 [Step 4: Auto-Injection & Output]
-Omniscribe waits for the ChatGPT editor DOM to hydrate, pastes the context payload, and 
+RelayOne waits for the ChatGPT editor DOM to hydrate, pastes the context payload, and 
 auto-submits the prompt. ChatGPT continues the thread seamlessly.
   │
   ▼
@@ -76,7 +76,7 @@ adjusts page margins, and clicks "Download PDF". The document downloads locally.
 
 ## 5. Competitor Analysis
 
-| Dimension | Poe / TypingMind | Standard Exporter Extensions | Omniscribe AI (Consolidated) |
+| Dimension | Poe / TypingMind | Standard Exporter Extensions | RelayOne AI (Consolidated) |
 | :--- | :--- | :--- | :--- |
 | **Cost Model** | Requires expensive API keys or subscriptions. | Free, but heavily ad-supported or broken. | **Freemium ($5/mo for Pro styles).** |
 | **Context Bridge** | None (siloed inside the wrapper client). | None. | **Automated tab-to-tab handoffs (P0).** |

@@ -1,5 +1,5 @@
 /**
- * Automated Test Runner for Omniscribe AI
+ * Automated Test Runner for RelayOne AI
  * Validates critical logic paths: LaTeX scraping and export formatting.
  */
 

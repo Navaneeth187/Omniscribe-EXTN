@@ -1,12 +1,12 @@
 import { db } from '../database/local_db.ts';
 
 // Log background worker activation
-console.log('[Omniscribe Background] Service Worker started.');
+console.log('[RelayOne Background] Service Worker started.');
 
 // Handle extension installation or updates
 chrome.runtime.onInstalled.addListener((details) => {
   if (details.reason === 'install') {
-    console.log('[Omniscribe Background] Installed for the first time.');
+    console.log('[RelayOne Background] Installed for the first time.');
     // Initialize default preferences in chrome storage
     chrome.storage.local.set({
       settings: {
@@ -15,10 +15,10 @@ chrome.runtime.onInstalled.addListener((details) => {
         preamble: 'The following is context from my previous session: '
       }
     }, () => {
-      console.log('[Omniscribe Background] Default storage parameters initialized.');
+      console.log('[RelayOne Background] Default storage parameters initialized.');
     });
   } else if (details.reason === 'update') {
-    console.log('[Omniscribe Background] Updated to a new version.');
+    console.log('[RelayOne Background] Updated to a new version.');
   }
 
   // Configure side panel behavior if supported
@@ -39,16 +39,16 @@ async function runDatabasePruner(): Promise<void> {
     chrome.storage.local.get(['settings'], async (result) => {
       const retentionDays = result.settings?.retentionDays ?? 30;
       const prunedCount = await db.pruneOldConversations(retentionDays);
-      console.log(`[Omniscribe Background] Pruner deleted ${prunedCount} stale conversations.`);
+      console.log(`[RelayOne Background] Pruner deleted ${prunedCount} stale conversations.`);
     });
   } catch (error) {
-    console.error('[Omniscribe Background] Pruner run failed:', error);
+    console.error('[RelayOne Background] Pruner run failed:', error);
   }
 }
 
 // Register communication message routes
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
-  console.log('[Omniscribe Background] Received message:', message);
+  console.log('[RelayOne Background] Received message:', message);
 
   if (message.type === 'GET_DATABASE_STATS') {
     (async () => {
@@ -57,7 +57,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         const messageCount = await db.messages.count();
         sendResponse({ success: true, conversationCount, messageCount });
       } catch (error) {
-        console.error('[Omniscribe Background] Failed to fetch database stats:', error);
+        console.error('[RelayOne Background] Failed to fetch database stats:', error);
         sendResponse({ success: false, error: (error as Error).message });
       }
     })();
@@ -71,7 +71,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         
         await db.saveConversation({
           id: dummyId,
-          title: 'Hello Omniscribe!',
+          title: 'Hello RelayOne!',
           platform: 'chatgpt',
           url: 'https://chatgpt.com/c/dummy',
           timestamp: Date.now(),
@@ -95,7 +95,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
 
         sendResponse({ success: true, conversationId: dummyId });
       } catch (error) {
-        console.error('[Omniscribe Background] Failed to add dummy chat:', error);
+        console.error('[RelayOne Background] Failed to add dummy chat:', error);
         sendResponse({ success: false, error: (error as Error).message });
       }
     })();
@@ -110,7 +110,7 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         await db.saveMessages(messages);
         sendResponse({ success: true });
       } catch (error) {
-        console.error('[Omniscribe Background] SAVE_LOCAL_CONVERSATION transaction failed:', error);
+        console.error('[RelayOne Background] SAVE_LOCAL_CONVERSATION transaction failed:', error);
         sendResponse({ success: false, error: (error as Error).message });
       }
     })();

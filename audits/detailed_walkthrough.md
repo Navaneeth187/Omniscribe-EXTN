@@ -1,6 +1,6 @@
-# Omniscribe AI: Production Walkthrough & User Manual
+# RelayOne AI: Production Walkthrough & User Manual
 
-Welcome to **Omniscribe AI**, a unified, local-first context bridge, visual document compilation deck, and sandboxed math rendering extension. This document outlines the architecture, user flows, and instructions for testing and running the extension.
+Welcome to **RelayOne AI**, a unified, local-first context bridge, visual document compilation deck, and sandboxed math rendering extension. This document outlines the architecture, user flows, and instructions for testing and running the extension.
 
 ---
 
@@ -19,10 +19,10 @@ To load the compiled extension into Google Chrome:
    ```
 3. **Toggle Developer Mode:** Turn on the **Developer Mode** slider in the top-right corner.
 4. **Load Unpacked:** Click the **Load unpacked** button in the top-left, navigate to the `e:\Projects\Extension V2\` workspace, and select the output `dist` folder.
-5. **Pin Omniscribe:** Locate **Omniscribe AI** in your Chrome Extensions menu (puzzle icon) and pin it to your toolbar.
+5. **Pin RelayOne:** Locate **RelayOne AI** in your Chrome Extensions menu (puzzle icon) and pin it to your toolbar.
 
 > [!NOTE]  
-> A pre-packaged production zip `omniscribe-ai-extension.zip` has been generated in the root directory for immediate manual uploads.
+> A pre-packaged production zip `relayone-ai-extension.zip` has been generated in the root directory for immediate manual uploads.
 
 ---
 
@@ -30,12 +30,12 @@ To load the compiled extension into Google Chrome:
 
 ### A. The Floating Orb & Scraper (In-Context Bridge)
 *   **Target Websites:** Matches ChatGPT, Claude, Gemini, Perplexity, and Grok.
-*   **Behavior:** When you visit any of these pages, a glassmorphic **Omniscribe Floating Orb** mounts in the bottom-right corner using a safe **Shadow DOM** to prevent website styling leaks.
+*   **Behavior:** When you visit any of these pages, a glassmorphic **RelayOne Floating Orb** mounts in the bottom-right corner using a safe **Shadow DOM** to prevent website styling leaks.
 *   **Manual Trigger:** Click **Capture Thread** on the Orb. The extension scrapes the active thread's prompts and answers, formats them, and writes them into local IndexedDB storage.
 *   **Context Handoff:** Click any target (e.g., *Claude*) on the Orb's expansion menu. The extension stores the active conversation thread history, sets a pending bridge, opens the destination page, automatically inserts the history prefixed with your custom preamble, and submits the prompt.
 
 ### B. The Sidebar Aggregator (`sidepanel.html`)
-*   **Access:** Click the Omniscribe extension icon or click **Open Sidebar Aggregator** in the popup menu.
+*   **Access:** Click the RelayOne extension icon or click **Open Sidebar Aggregator** in the popup menu.
 *   **Search & Tag Filters:** Type search terms to filter conversation histories by title or platform. Click tag buttons (e.g. `#research`) to narrow down logs.
 *   **Fast Formatted Exports:**
     1. Select any conversation card.

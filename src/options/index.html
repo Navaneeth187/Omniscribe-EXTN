@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Omniscribe AI Settings</title>
+    <title>RelayOne AI Settings</title>
     
     <!-- Google Fonts for High-End Typography -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -54,24 +54,7 @@
       }
     </style>
   </head>
-  <body>
-    <!-- Script to prevent visual flash of incorrect theme before React boots up -->
-    <script>
-      (function() {
-        if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-          chrome.storage.local.get(['omniscribe-theme'], function(res) {
-            if (res['omniscribe-theme'] === 'light') {
-              document.body.classList.add('light-theme');
-            } else {
-              document.body.classList.add('dark-theme');
-            }
-          });
-        } else {
-          var systemPrefersLight = window.matchMedia('(prefers-color-scheme: light)').matches;
-          document.body.classList.add(systemPrefersLight ? 'light-theme' : 'dark-theme');
-        }
-      })();
-    </script>
+  <body class="dark-theme">
 
     <!-- Ambient background layer -->
     <div class="ambient-glow"></div>

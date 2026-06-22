@@ -1,5 +1,5 @@
 /**
- * Theme Presets for Omniscribe AI Options & Previews
+ * Theme Presets for RelayOne AI Options & Previews
  */
 
 export interface ColorTheme {

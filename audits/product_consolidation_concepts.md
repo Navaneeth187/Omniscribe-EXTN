@@ -48,7 +48,7 @@
 
 ## Part 2: Product Concepts
 
-### Concept 1: Omniscribe AI (The Unified Workspace Archiver & Bridge)
+### Concept 1: RelayOne AI (The Unified Workspace Archiver & Bridge)
 *   **Target User:** Knowledge workers, researchers, content creators.
 *   **Core Value Proposition:** A local-first browser shell that unifies web LLM histories, bridges prompts across tabs, and exports print-ready formatted documents.
 *   **Main Features:**
@@ -107,7 +107,7 @@
 
 ## Part 3: Strategic Concept Rankings
 
-1.  **Omniscribe AI (Concept 1):** **Strongest.** It directly aligns with the current code assets of both audited extensions. It carries minimal technological risk and solves a direct, high-frequency user pain point.
+1.  **RelayOne AI (Concept 1):** **Strongest.** It directly aligns with the current code assets of both audited extensions. It carries minimal technological risk and solves a direct, high-frequency user pain point.
 2.  **VaultLLM (Concept 3):** **Strong.** Excellent market positioning (privacy-first). It leverages the Exporter's local cache database infrastructure and adds security layers.
 3.  **PrompFlow (Concept 2):** **Moderate-Strong.** Highly innovative, but sync synchronization across dynamic SPA DOMs introduces significant maintenance overhead.
 4.  **PublisherAI (Concept 5):** **Moderate.** Clear market, but requires implementing extensive CMS API integrations.

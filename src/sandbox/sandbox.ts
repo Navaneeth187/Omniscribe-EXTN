@@ -1,7 +1,7 @@
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
 
-console.log('[Omniscribe Sandbox] Math compiler loaded.');
+console.log('[RelayOne Sandbox] Math compiler loaded.');
 
 /**
  * Listen for LaTeX compilation commands from parent contexts.
@@ -31,7 +31,7 @@ window.addEventListener('message', (event) => {
       event.origin as any
     );
   } catch (error) {
-    console.error('[Omniscribe Sandbox] LaTeX rendering failed:', error);
+    console.error('[RelayOne Sandbox] LaTeX rendering failed:', error);
     
     event.source?.postMessage(
       {

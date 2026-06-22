@@ -1,6 +1,6 @@
-# Omniscribe AI: Production Readiness Audit Report
+# RelayOne AI: Production Readiness Audit Report
 
-This report presents a comprehensive technical, functional, and security audit of the **Omniscribe AI** extension codebase as of Phase 6.
+This report presents a comprehensive technical, functional, and security audit of the **RelayOne AI** extension codebase as of Phase 6.
 
 ---
 
@@ -63,7 +63,7 @@ This report presents a comprehensive technical, functional, and security audit o
 
 - [x] Run `npm run build` to confirm compiler clean assets compilation.
 - [x] Validate presence of copied files: `dist/manifest.json`.
-- [x] Package output via Zip wrapper (`omniscribe-ai-extension.zip`).
+- [x] Package output via Zip wrapper (`relayone-ai-extension.zip`).
 - [x] Clear dummy developer debug logs from build outputs.
 - [x] Verify developer mode unpacking on Chromium browser instances.
 

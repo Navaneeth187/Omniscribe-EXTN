@@ -1,4 +1,4 @@
-# Technical Architecture: Omniscribe AI
+# Technical Architecture: RelayOne AI
 **Product Version:** 1.0 (Consolidated Super-Extension)  
 **Author:** Technical Architect Team  
 **Date:** June 21, 2026  
@@ -8,7 +8,7 @@
 
 ## 1. System Overview & Architecture Diagrams
 
-Omniscribe AI utilizes a local-first architecture. All heavy computation—such as document styling, PDF formatting, syntax parsing, and database transactions—runs client-side inside the user's browser runtime. 
+RelayOne AI utilizes a local-first architecture. All heavy computation—such as document styling, PDF formatting, syntax parsing, and database transactions—runs client-side inside the user's browser runtime. 
 
 ### 1.1. Overall Component Architecture
 The diagram below illustrates the relationship between Content Scripts (active LLM tabs), the Service Worker, sandboxed frames, and local storage structures.
@@ -95,7 +95,7 @@ sequenceDiagram
 The repository follows a clean React + Vite workspace config, compiling background service workers, content scripts, and page endpoints:
 
 ```text
-omniscribe-extension/
+relayone-extension/
 ├── package.json
 ├── tsconfig.json
 ├── vite.config.ts              # Configuration for background, popup, options build steps
@@ -162,12 +162,12 @@ export interface Message {
   timestamp: number;
 }
 
-export class OmniscribeDatabase extends Dexie {
+export class RelayOneDatabase extends Dexie {
   conversations!: Table<Conversation>;
   messages!: Table<Message>;
 
   constructor() {
-    super('OmniscribeDB');
+    super('RelayOneDB');
     this.version(1).stores({
       conversations: 'id, title, platform, timestamp, *tags',
       messages: '++id, conversationId, role, timestamp'
@@ -175,14 +175,14 @@ export class OmniscribeDatabase extends Dexie {
   }
 }
 
-export const db = new OmniscribeDatabase();
+export const db = new RelayOneDatabase();
 ```
 
 ---
 
 ## 4. Frontend Architecture & State Management
 
-Omniscribe AI's frontends (Popup, Options, and Sidepanel) are written as modular React components.
+RelayOne AI's frontends (Popup, Options, and Sidepanel) are written as modular React components.
 
 ### 4.1. Core Frontend Viewports
 1.  **Options Panel:** History index browser, theme customize dashboards, backup/restore tool.
@@ -209,7 +209,7 @@ In browser extensions, the "backend" is represented by the background **Service 
 ---
 
 ## 6. Authentication Flow
-Omniscribe AI operates under a zero-cloud credential policy. No authentication or login flows are required as all data processing and storage resides 100% locally on the user's local machine context.
+RelayOne AI operates under a zero-cloud credential policy. No authentication or login flows are required as all data processing and storage resides 100% locally on the user's local machine context.
 
 ---
 
@@ -228,7 +228,7 @@ type SystemMessage =
 
 ## 8. Security & Sandbox Model
 
-Chromium’s MV3 guidelines enforce strict restrictions on remote script execution. Omniscribe AI mitigates security risks through isolated contexts.
+Chromium’s MV3 guidelines enforce strict restrictions on remote script execution. RelayOne AI mitigates security risks through isolated contexts.
 
 ```mermaid
 graph LR

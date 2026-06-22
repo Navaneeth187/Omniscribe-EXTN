@@ -8,16 +8,16 @@ export default function SidePanel() {
 
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get(['omniscribe-theme'], (res) => {
-        if (res['omniscribe-theme']) {
-          setTheme(res['omniscribe-theme']);
+      chrome.storage.local.get(['relayone-theme'], (res) => {
+        if (res['relayone-theme']) {
+          setTheme(res['relayone-theme']);
         }
       });
     }
 
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-      if (areaName === 'local' && changes['omniscribe-theme']) {
-        setTheme(changes['omniscribe-theme'].newValue);
+      if (areaName === 'local' && changes['relayone-theme']) {
+        setTheme(changes['relayone-theme'].newValue);
       }
     };
     
@@ -109,7 +109,7 @@ export default function SidePanel() {
       const fullPrompt = `${settings.preamble}\n\n${textBuffer}\n\n[End of Bridged Context]`;
 
       chrome.storage.local.set({
-        omniscribe_pending_bridge: {
+        relayone_pending_bridge: {
           targetPlatform,
           prompt: fullPrompt,
           timestamp: Date.now()
@@ -192,7 +192,7 @@ export default function SidePanel() {
           letterSpacing: '-0.02em',
           color: dynamicHeadingColor
         }}>
-          Omniscribe Ledger
+          RelayOne Ledger
         </h2>
         <span style={{ fontSize: '11px', color: dynamicSubTextColor }}>Local archive & activity history</span>
       </div>

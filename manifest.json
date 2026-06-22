@@ -1,6 +1,6 @@
 {
   "manifest_version": 3,
-  "name": "Omniscribe AI",
+  "name": "RelayOne AI",
   "version": "1.3.4",
   "description": "Unified Local-First Context Bridge and Document Exporter",
   "permissions": [
@@ -23,7 +23,7 @@
   },
   "action": {
     "default_popup": "src/popup/index.html",
-    "default_title": "Omniscribe AI"
+    "default_title": "RelayOne AI"
   },
   "options_ui": {
     "page": "src/options/index.html",

@@ -1,8 +1,8 @@
 # Master Product Configuration: 50 MCQ Selections Audit
-**Product:** Omniscribe AI (Consolidated Super-Extension)  
+**Product:** RelayOne AI (Consolidated Super-Extension)  
 **Status:** Audit Choices Locked
 
-This document acts as the master record of all 50 architectural and product design choices selected for the Omniscribe AI extension development.
+This document acts as the master record of all 50 architectural and product design choices selected for the RelayOne AI extension development.
 
 ---
 

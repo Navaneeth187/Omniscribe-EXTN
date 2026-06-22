@@ -1,5 +1,5 @@
 /* ============================================================
-   OMNISCRIBE AI — content.css
+   RELAYONE AI — content.css
    Shadow-DOM encapsulated styles for the Floating Orb Panel
    ============================================================ */
 
@@ -8,7 +8,7 @@
 }
 
 /* Glassmorphic Panel Container */
-.omniscribe-panel {
+.relayone-panel {
   position: fixed;
   z-index: 2147483647; /* Ensure it floats above all elements */
   top: 15%;
@@ -35,14 +35,14 @@
 }
 
 /* Expanded Panel Configuration */
-.omniscribe-panel.expanded {
+.relayone-panel.expanded {
   width: 280px;
   border-radius: 16px;
   padding: 10px;
 }
 
 /* Drag Handle / Header Control */
-.omniscribe-drag-handle {
+.relayone-drag-handle {
   width: 100%;
   height: 14px;
   display: flex;
@@ -54,15 +54,15 @@
   transition: opacity 0.2s;
 }
 
-.omniscribe-drag-handle:active {
+.relayone-drag-handle:active {
   cursor: grabbing;
 }
 
-.omniscribe-panel:hover .omniscribe-drag-handle {
+.relayone-panel:hover .relayone-drag-handle {
   opacity: 0.8;
 }
 
-.omniscribe-drag-dot {
+.relayone-drag-dot {
   width: 4px;
   height: 4px;
   background-color: #f8fafc;
@@ -70,7 +70,7 @@
 }
 
 /* Primary Trigger Orb */
-.omniscribe-trigger-orb {
+.relayone-trigger-orb {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -85,31 +85,31 @@
   flex-shrink: 0;
 }
 
-.omniscribe-trigger-orb:hover {
+.relayone-trigger-orb:hover {
   transform: scale(1.05);
   box-shadow: 0 4px 18px rgba(124, 58, 237, 0.5);
 }
 
-.omniscribe-trigger-orb svg {
+.relayone-trigger-orb svg {
   width: 20px;
   height: 20px;
   fill: #ffffff;
 }
 
 /* Quick Action LLM Grid */
-.omniscribe-grid {
+.relayone-grid {
   display: none;
   flex-direction: column;
   width: 100%;
   gap: 6px;
 }
 
-.omniscribe-panel.expanded .omniscribe-grid {
+.relayone-panel.expanded .relayone-grid {
   display: flex;
 }
 
 /* Individual Destination Buttons */
-.omniscribe-action-row {
+.relayone-action-row {
   width: 100%;
   border: none;
   background: rgba(255, 255, 255, 0.02);
@@ -125,13 +125,13 @@
   transition: background-color 0.2s, border-color 0.2s, transform 0.1s;
 }
 
-.omniscribe-action-row:hover {
+.relayone-action-row:hover {
   background: rgba(255, 255, 255, 0.06);
   border-color: var(--row-hover-color, rgba(255, 255, 255, 0.15));
   transform: translateX(2px);
 }
 
-.omniscribe-action-icon {
+.relayone-action-icon {
   width: 20px;
   height: 20px;
   display: flex;
@@ -140,19 +140,19 @@
   border-radius: 4px;
 }
 
-.omniscribe-action-icon svg {
+.relayone-action-icon svg {
   width: 16px;
   height: 16px;
 }
 
-.omniscribe-action-label {
+.relayone-action-label {
   font-size: 12px;
   font-weight: 500;
   flex-grow: 1;
 }
 
 /* Toast Messages */
-.omniscribe-toast {
+.relayone-toast {
   position: fixed;
   bottom: 24px;
   left: 50%;
@@ -172,19 +172,19 @@
               opacity 0.2s;
 }
 
-.omniscribe-toast.visible {
+.relayone-toast.visible {
   transform: translate(-50%, 0);
   opacity: 1;
 }
 
-.omniscribe-toast-success {
+.relayone-toast-success {
   border-left: 4px solid #10b981;
 }
 
-.omniscribe-toast-error {
+.relayone-toast-error {
   border-left: 4px solid #ef4444;
 }
 
-.omniscribe-toast-info {
+.relayone-toast-info {
   border-left: 4px solid #6366f1;
 }

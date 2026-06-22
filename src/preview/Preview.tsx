@@ -175,7 +175,7 @@ export default function Preview({ messages, fontSize, theme, margin, lineHeight 
 
                 {/* Body Text */}
                 <div
-                  className="omniscribe-preview-body"
+                  className="relayone-preview-body"
                   style={{
                     color: isUser ? currentTheme.userText : currentTheme.assistantText,
                     wordBreak: 'break-word'

@@ -1,5 +1,5 @@
 /**
- * Scraper Module for Omniscribe AI
+ * Scraper Module for RelayOne AI
  * Contains DOM query selectors and clean-up routines to extract conversation streams
  * from the five supported AI platforms: ChatGPT, Claude, Gemini, Perplexity, and Grok.
  */

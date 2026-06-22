@@ -67,16 +67,16 @@ export default function Options() {
   // React on changes to chrome storage theme
   useEffect(() => {
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.get(['omniscribe-theme'], (res) => {
-        if (res['omniscribe-theme']) {
-          setTheme(res['omniscribe-theme']);
+      chrome.storage.local.get(['relayone-theme'], (res) => {
+        if (res['relayone-theme']) {
+          setTheme(res['relayone-theme']);
         }
       });
     }
 
     const handleStorageChange = (changes: { [key: string]: chrome.storage.StorageChange }, areaName: string) => {
-      if (areaName === 'local' && changes['omniscribe-theme']) {
-        setTheme(changes['omniscribe-theme'].newValue);
+      if (areaName === 'local' && changes['relayone-theme']) {
+        setTheme(changes['relayone-theme'].newValue);
       }
     };
     
@@ -175,14 +175,14 @@ export default function Options() {
     const nextTheme = theme === 'dark' ? 'light' : 'dark';
     setTheme(nextTheme);
     if (typeof chrome !== 'undefined' && chrome.storage && chrome.storage.local) {
-      chrome.storage.local.set({ 'omniscribe-theme': nextTheme });
+      chrome.storage.local.set({ 'relayone-theme': nextTheme });
     }
   };
 
   // Triggers client download files
   const handleExportFile = async (format: 'pdf' | 'md' | 'docx' | 'json') => {
     let exportMessages = DUMMY_PREVIEW_CONVERSATION;
-    let exportTitle = 'Omniscribe Demo Document';
+    let exportTitle = 'RelayOne Demo Document';
     let targetChat: any = undefined;
 
     if (selectedExportChatId) {
@@ -281,7 +281,7 @@ export default function Options() {
               </svg>
             </div>
             <div>
-              <div style={{ fontWeight: 700, fontSize: '16px', letterSpacing: '-0.02em', color: dynamicHeadingColor }}>Omniscribe AI</div>
+              <div style={{ fontWeight: 700, fontSize: '16px', letterSpacing: '-0.02em', color: dynamicHeadingColor }}>RelayOne AI</div>
               <div style={{ fontSize: '10px', color: dynamicSubTextColor, fontWeight: 500 }}>V1.3.4 Console</div>
             </div>
           </div>
@@ -438,7 +438,7 @@ export default function Options() {
               <div style={{ fontSize: '10px', fontWeight: 700, color: dynamicSubTextColor, letterSpacing: '0.05em', padding: '0 8px 8px 8px', textTransform: 'uppercase' }}>Support</div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
                 <a
-                  href="https://github.com/Navaneeth187/Omniscribe-EXTN/issues"
+                  href="https://github.com/Navaneeth187/RelayOne-EXTN/issues"
                   target="_blank"
                   rel="noreferrer"
                   style={{
@@ -469,7 +469,7 @@ export default function Options() {
                 </a>
 
                 <a
-                  href="https://github.com/Navaneeth187/Omniscribe-EXTN"
+                  href="https://github.com/Navaneeth187/RelayOne-EXTN"
                   target="_blank"
                   rel="noreferrer"
                   style={{

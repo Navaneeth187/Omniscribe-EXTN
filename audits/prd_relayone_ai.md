@@ -1,4 +1,4 @@
-# Product Requirements Document (PRD): Omniscribe AI
+# Product Requirements Document (PRD): RelayOne AI
 **Product Version:** 1.0 (Consolidated Super-Extension)  
 **Author:** Product Management & Technical Architecture Team  
 **Date:** June 21, 2026  
@@ -7,7 +7,7 @@
 ---
 
 ## 1. Executive Summary
-Omniscribe AI is a secure, privacy-first, local-first browser extension designed to optimize workflows for individuals who use multiple Large Language Model (LLM) interfaces daily. By consolidating the real-time context-transfer mechanics of the **LLM Context Bridge** with the advanced document formatting features of **AI Exporter**, Omniscribe AI serves as a unified control shell. It enables users to transfer prompt contexts between active LLM tabs in one click, and format and download conversations into high-fidelity documents (PDF, Markdown, Word, JSON).
+RelayOne AI is a secure, privacy-first, local-first browser extension designed to optimize workflows for individuals who use multiple Large Language Model (LLM) interfaces daily. By consolidating the real-time context-transfer mechanics of the **LLM Context Bridge** with the advanced document formatting features of **AI Exporter**, RelayOne AI serves as a unified control shell. It enables users to transfer prompt contexts between active LLM tabs in one click, and format and download conversations into high-fidelity documents (PDF, Markdown, Word, JSON).
 
 ---
 
@@ -192,7 +192,7 @@ No external API requests are performed. All data extraction, indexing, styling, 
 
 ### 17.1. Database Schema (IndexedDB via Dexie)
 ```javascript
-const db = new Dexie('OmniscribeDB');
+const db = new Dexie('RelayOneDB');
 db.version(1).stores({
   conversations: 'id, title, platform, url, timestamp',
   messages: '++id, conversationId, role, content, thinkingContent, timestamp',

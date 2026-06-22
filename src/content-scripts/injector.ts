@@ -1,5 +1,5 @@
 /**
- * Injector Module for Omniscribe AI
+ * Injector Module for RelayOne AI
  * Emulates user typing actions and automates form submissions
  * across ChatGPT, Claude, Gemini, Perplexity, and Grok editors.
  */

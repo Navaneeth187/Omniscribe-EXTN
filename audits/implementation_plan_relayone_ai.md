@@ -1,4 +1,4 @@
-# Implementation Plan & Engineering Backlog: Omniscribe AI
+# Implementation Plan & Engineering Backlog: RelayOne AI
 **Product Version:** 1.0 (Consolidated Super-Extension)  
 **Author:** Technical Program Management & Dev Lead Team  
 **Date:** June 14, 2026  

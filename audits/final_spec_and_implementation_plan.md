@@ -1,5 +1,5 @@
 # Final Specification & Phase-by-Phase Implementation Plan
-**Product:** Omniscribe AI (Consolidated Super-Extension)  
+**Product:** RelayOne AI (Consolidated Super-Extension)  
 **Author:** Technical Lead & Senior Program Architect  
 **Date:** June 14, 2026  
 **Status:** Approved Roadmap for Code Scaffolding
@@ -9,7 +9,7 @@
 ## Part 1: Product Specification & Core Summaries
 
 ### 1. Final Product Summary
-Omniscribe AI is a high-performance, local-first Chromium extension (Manifest V3) that merges context bridging and document archiving. It enables users to transfer ongoing conversation threads between active LLM interfaces (Claude, ChatGPT, Gemini, Perplexity, and Grok) with a single click. Additionally, it preserves historical sessions locally via IndexedDB, letting users customize themes (Sakura, Lavender, etc.) and compile equations to export print-ready PDFs, Markdown, Word documents, or directly sync them to Notion.
+RelayOne AI is a high-performance, local-first Chromium extension (Manifest V3) that merges context bridging and document archiving. It enables users to transfer ongoing conversation threads between active LLM interfaces (Claude, ChatGPT, Gemini, Perplexity, and Grok) with a single click. Additionally, it preserves historical sessions locally via IndexedDB, letting users customize themes (Sakura, Lavender, etc.) and compile equations to export print-ready PDFs, Markdown, Word documents, or directly sync them to Notion.
 
 ### 2. Final Feature List
 *   **Draggable Glassmorphic Handoff Orb:** Injected floating widgets on target LLM pages offering instant transfer shortcuts.

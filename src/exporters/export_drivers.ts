@@ -1,5 +1,5 @@
 /**
- * Document Export Drivers for Omniscribe AI
+ * Document Export Drivers for RelayOne AI
  * Handles client-side compiles and local file downloads for Markdown, Word, PDF, and JSON.
  */
 
@@ -169,7 +169,7 @@ export function exportToMarkdown(title: string, messages: Message[], conversatio
   const url = conversation?.url || 'https://chatgpt.com';
 
   chrome.storage.local.get(['settings'], (res) => {
-    const userName = res.settings?.userName || 'Omniscribe User';
+    const userName = res.settings?.userName || 'RelayOne User';
 
     const contentArray: string[] = [
       `# ${platformName}`,
@@ -198,7 +198,7 @@ export function exportToMarkdown(title: string, messages: Message[], conversatio
       contentArray.push('---\n');
     });
 
-    contentArray.push('Powered by OmniScribe AI.');
+    contentArray.push('Powered by RelayOne AI.');
 
     const blob = new Blob([contentArray.join('\n')], { type: 'text/markdown;charset=utf-8;' });
     downloadFile(blob, `${getSafeFilename(title, 'chat_export')}.md`);
@@ -217,10 +217,10 @@ export function exportToJSON(title: string, messages: Message[], conversation?: 
     : new Date().toISOString();
     
   chrome.storage.local.get(['settings'], (res) => {
-    const userName = res.settings?.userName || 'Omniscribe User';
+    const userName = res.settings?.userName || 'RelayOne User';
 
     const payload = {
-      $schema: "https://omniscribe.ai/schemas/conversation-v2.json",
+      $schema: "https://relayone.ai/schemas/conversation-v2.json",
       metadata: {
         title: title,
         platform: platformName,
@@ -401,7 +401,7 @@ export function exportToDocx(title: string, messages: Message[], conversation?: 
   const htmlFooter = `
       <div class="footer">
         ---<br/>
-        Powered by <strong>OmniScribe AI</strong>.
+        Powered by <strong>RelayOne AI</strong>.
       </div>
     </body>
     </html>
@@ -617,7 +617,7 @@ export function exportToPDF(
     doc.setFont('Helvetica', 'normal');
     doc.setFontSize(8);
     doc.setTextColor(148, 163, 184); // Slate 400
-    doc.text(`Omniscribe Export: ${title.length > 50 ? title.substring(0, 50) + '...' : title}`, margin, 12);
+    doc.text(`RelayOne Export: ${title.length > 50 ? title.substring(0, 50) + '...' : title}`, margin, 12);
     
     doc.setDrawColor(241, 245, 249); // Slate 100
     doc.setLineWidth(0.1);
@@ -628,7 +628,7 @@ export function exportToPDF(
     doc.setLineWidth(0.1);
     doc.line(margin, pageHeight - 12, pageWidth - margin, pageHeight - 12);
     
-    doc.text('Powered by OmniScribe AI', margin, pageHeight - 8);
+    doc.text('Powered by RelayOne AI', margin, pageHeight - 8);
     doc.text(`Page ${i} of ${totalPages}`, pageWidth - margin - 15, pageHeight - 8);
   }
 

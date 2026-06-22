@@ -18,12 +18,12 @@ export interface Message {
   timestamp: number;
 }
 
-export class OmniscribeDatabase extends Dexie {
+export class RelayOneDatabase extends Dexie {
   conversations!: Table<Conversation>;
   messages!: Table<Message>;
 
   constructor() {
-    super('OmniscribeDB');
+    super('RelayOneDB');
     
     // Define database tables and index keys
     this.version(1).stores({
@@ -37,11 +37,11 @@ export class OmniscribeDatabase extends Dexie {
    */
   async saveConversation(conversation: Conversation): Promise<string> {
     try {
-      console.log(`[OmniscribeDB] Saving conversation: ${conversation.id}`);
+      console.log(`[RelayOneDB] Saving conversation: ${conversation.id}`);
       await this.conversations.put(conversation);
       return conversation.id;
     } catch (error) {
-      console.error('[OmniscribeDB] Error saving conversation:', error);
+      console.error('[RelayOneDB] Error saving conversation:', error);
       throw error;
     }
   }
@@ -52,12 +52,12 @@ export class OmniscribeDatabase extends Dexie {
   async saveMessages(newMessages: Message[]): Promise<void> {
     if (newMessages.length === 0) return;
     try {
-      console.log(`[OmniscribeDB] Bulk saving ${newMessages.length} messages`);
+      console.log(`[RelayOneDB] Bulk saving ${newMessages.length} messages`);
       await this.transaction('rw', this.messages, async () => {
         await this.messages.bulkPut(newMessages);
       });
     } catch (error) {
-      console.error('[OmniscribeDB] Error saving messages in bulk:', error);
+      console.error('[RelayOneDB] Error saving messages in bulk:', error);
       throw error;
     }
   }
@@ -69,7 +69,7 @@ export class OmniscribeDatabase extends Dexie {
   async pruneOldConversations(retentionDays: number = 30): Promise<number> {
     const cutoffTime = Date.now() - retentionDays * 24 * 60 * 60 * 1000;
     try {
-      console.log(`[OmniscribeDB] Running prune check for records older than ${retentionDays} days...`);
+      console.log(`[RelayOneDB] Running prune check for records older than ${retentionDays} days...`);
       
       // Query conversations older than the cutoff threshold
       const oldConversations = await this.conversations
@@ -78,7 +78,7 @@ export class OmniscribeDatabase extends Dexie {
         .toArray();
 
       if (oldConversations.length === 0) {
-        console.log('[OmniscribeDB] No conversations to prune.');
+        console.log('[RelayOneDB] No conversations to prune.');
         return 0;
       }
 
@@ -98,10 +98,10 @@ export class OmniscribeDatabase extends Dexie {
           .delete();
       });
 
-      console.log(`[OmniscribeDB] Pruned ${oldConversations.length} conversations and associated messages.`);
+      console.log(`[RelayOneDB] Pruned ${oldConversations.length} conversations and associated messages.`);
       return oldConversations.length;
     } catch (error) {
-      console.error('[OmniscribeDB] Error during conversation pruning:', error);
+      console.error('[RelayOneDB] Error during conversation pruning:', error);
       throw error;
     }
   }
@@ -118,11 +118,11 @@ export class OmniscribeDatabase extends Dexie {
         .sortBy('timestamp');
       return { conversation, messages };
     } catch (error) {
-      console.error(`[OmniscribeDB] Error fetching full conversation ${conversationId}:`, error);
+      console.error(`[RelayOneDB] Error fetching full conversation ${conversationId}:`, error);
       throw error;
     }
   }
 }
 
-export const db = new OmniscribeDatabase();
+export const db = new RelayOneDatabase();
 export default db;
